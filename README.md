@@ -371,10 +371,6 @@ ecommerce-system/
 ### Quick Start with Docker
 
 ```bash
-# Clone the repository
-git clone https://github.com/jhansimahanthi/e-commerce.git
-cd e-commerce
-
 # Copy environment variables
 cp .env.example .env
 
@@ -540,18 +536,3 @@ This project demonstrates understanding of:
 - API Gateway routing and cross-cutting concerns
 
 See [docs/INTERVIEW_GUIDE.md](docs/INTERVIEW_GUIDE.md) for detailed Q&A.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👤 Author
-
-**Jhansi Mahanthi** — Java Full Stack Developer
-
-- GitHub: [jhansimahanthi](https://github.com/jhansimahanthi)
-- LinkedIn: [jhansimahanthi](https://linkedin.com/in/jhansimahanthi)

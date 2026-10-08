@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters: []
+
+  main:
+    web-application-type: reactive
+
+jwt:
+  secret: ${JWT_SECRET:change-this-to-a-secure-random-string}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.ecommerce.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+
+eureka:
+  client:
+    enabled: false

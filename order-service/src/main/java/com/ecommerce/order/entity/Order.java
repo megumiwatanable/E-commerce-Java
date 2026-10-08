@@ -17,8 +17,20 @@ public class Order {
     @Column(name = "order_number", nullable = false, unique = true, length = 50)
     private String orderNumber;
 
-    @Column(name = "customer_id", nullable = false)
+    @Column(name = "customer_id")
     private Long customerId;
+
+    @Column(name = "guest_email", length = 255)
+    private String guestEmail;
+
+    @Column(name = "guest_phone", length = 30)
+    private String guestPhone;
+
+    @Column(name = "checkout_token", length = 64, unique = true)
+    private String checkoutToken;
+
+    @Column(name = "idempotency_key", length = 64, unique = true)
+    private String idempotencyKey;
 
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
@@ -37,6 +49,9 @@ public class Order {
 
     @Column(name = "shipping_address", columnDefinition = "TEXT")
     private String shippingAddress;
+
+    @Column(name = "billing_address", columnDefinition = "TEXT")
+    private String billingAddress;
 
     
     @Column(name = "payment_status", nullable = false)
@@ -87,6 +102,18 @@ public class Order {
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
+    public String getGuestEmail() { return guestEmail; }
+    public void setGuestEmail(String guestEmail) { this.guestEmail = guestEmail; }
+
+    public String getGuestPhone() { return guestPhone; }
+    public void setGuestPhone(String guestPhone) { this.guestPhone = guestPhone; }
+
+    public String getCheckoutToken() { return checkoutToken; }
+    public void setCheckoutToken(String checkoutToken) { this.checkoutToken = checkoutToken; }
+
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
+
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 
@@ -104,6 +131,8 @@ public class Order {
 
     public String getShippingAddress() { return shippingAddress; }
     public void setShippingAddress(String shippingAddress) { this.shippingAddress = shippingAddress; }
+    public String getBillingAddress() { return billingAddress; }
+    public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
 
     public PaymentStatus getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }

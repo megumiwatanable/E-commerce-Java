@@ -17,6 +17,9 @@ public class Cart {
     @Column(name = "customer_id", nullable = false, unique = true)
     private Long customerId;
 
+    @Column(name = "billing_address", columnDefinition = "TEXT")
+    private String billingAddress;
+
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
 
@@ -60,6 +63,8 @@ public class Cart {
 
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getBillingAddress() { return billingAddress; }
+    public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
 
     public List<CartItem> getItems() { return items; }
     public void setItems(List<CartItem> items) { this.items = items; }

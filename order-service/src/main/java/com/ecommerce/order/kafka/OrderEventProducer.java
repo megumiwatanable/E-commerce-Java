@@ -69,6 +69,32 @@ public class OrderEventProducer {
         }
     }
 
+    public void publishOrderPaidEvent(Long orderId, String orderNumber, Long customerId,
+                                      Long productId, Integer quantity) {
+        publishInventoryEvent(orderId, orderNumber, customerId, productId, quantity, "ORDER_PAID");
+    }
+
+    private void publishInventoryEvent(Long orderId, String orderNumber, Long customerId,
+                                       Long productId, Integer quantity, String eventType) {
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("eventId", UUID.randomUUID().toString());
+            event.put("eventType", eventType);
+            event.put("timestamp", Instant.now().toString());
+            event.put("orderId", orderId);
+            event.put("orderNumber", orderNumber);
+            event.put("customerId", customerId);
+            event.put("productId", productId);
+            event.put("quantity", quantity);
+
+            String message = objectMapper.writeValueAsString(event);
+            kafkaTemplate.send(TOPIC, orderId.toString(), message);
+            logger.info("Published {} event for order: {}", eventType, orderNumber);
+        } catch (Exception e) {
+            logger.error("Failed to publish {} event: {}", eventType, e.getMessage(), e);
+        }
+    }
+
     public void publishOrderStatusEvent(Long orderId, String orderNumber, Long customerId,
                                          String eventType) {
         try {

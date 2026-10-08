@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../../services/product.service';
 import { CartService } from '../../../services/cart.service';
+import { ToastService } from '../../../services/toast.service';
 import { Product, Category, PageResponse } from '../../../models/product.model';
 
 @Component({
@@ -143,7 +144,8 @@ export class ProductListComponent implements OnInit {
     private productService: ProductService,
     private cartService: CartService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -214,9 +216,9 @@ export class ProductListComponent implements OnInit {
 
   addToCart(product: Product, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product.id, 1).subscribe({
-      next: () => alert('Added to cart!'),
-      error: () => alert('Failed to add to cart')
+    this.cartService.addToCart(product, 1).subscribe({
+      next: () => this.toast.success(`${product.name} was added to your cart.`),
+      error: error => this.toast.error(error.error?.message || 'Failed to add this product to your cart.')
     });
   }
 }

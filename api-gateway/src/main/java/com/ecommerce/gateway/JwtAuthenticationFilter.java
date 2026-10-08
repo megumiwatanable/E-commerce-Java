@@ -22,8 +22,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
-import java.util.List;
-
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
@@ -31,18 +29,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
-
-    private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/products",
-            "/api/categories",
-            "/api/notifications",
-            "/actuator",
-            "/actuator/health",
-            "/swagger-ui",
-            "/v3/api-docs"
-    );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -54,12 +40,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // Allow public paths
-        if (isPublicPath(path)) {
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        // Public requests may omit JWT. If a token is present, still parse it so
+        // downstream services receive the authenticated user's identity.
+        if ((authHeader == null || !authHeader.startsWith("Bearer ")) && isPublicRequest(request)) {
             return chain.filter(exchange);
         }
 
-        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return unauthorizedResponse(exchange, "Missing or invalid Authorization header");
         }
@@ -84,8 +71,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
-    private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+    private boolean isPublicRequest(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+        HttpMethod method = request.getMethod();
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) return true;
+        if (method == HttpMethod.GET && (path.startsWith("/api/products") || path.startsWith("/api/categories"))) return true;
+        if (method == HttpMethod.GET && (path.matches("^/api/inventory/\\d+$") || path.startsWith("/api/inventory/check/"))) return true;
+        if (method == HttpMethod.GET && path.startsWith("/api/orders/guest/")) return true;
+        if (method == HttpMethod.POST && path.equals("/api/checkout/place-order")) return true;
+        return path.startsWith("/actuator") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
     }
 
     private Claims parseToken(String token) {

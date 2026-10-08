@@ -24,9 +24,10 @@ public class PaymentController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PaymentDTO>> processPayment(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Valid @RequestBody PaymentDTO.ProcessPaymentRequest request) {
-        PaymentDTO payment = paymentService.processPayment(request, Long.parseLong(userId));
+        Long customerId = userId == null ? null : Long.parseLong(userId);
+        PaymentDTO payment = paymentService.processPayment(request, customerId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Payment processed", payment));
     }

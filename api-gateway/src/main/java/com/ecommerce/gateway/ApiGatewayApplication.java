@@ -33,7 +33,7 @@ public class ApiGatewayApplication {
                         .filters(f -> f.stripPrefix(0))
                         .uri("http://order-service:8084"))
                 .route("order-service-orders", r -> r
-                        .path("/api/orders/**")
+                        .path("/api/orders/**", "/api/checkout/**")
                         .filters(f -> f.stripPrefix(0))
                         .uri("http://order-service:8084"))
                 .route("payment-service", r -> r

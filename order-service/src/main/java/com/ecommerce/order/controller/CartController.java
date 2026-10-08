@@ -55,4 +55,12 @@ public class CartController {
         orderService.clearCart(Long.parseLong(userId));
         return ResponseEntity.ok(ApiResponse.success("Cart cleared"));
     }
+
+    @PutMapping("/billing-address")
+    public ResponseEntity<ApiResponse<CartDTO>> updateBillingAddress(
+            @RequestHeader("X-User-Id") String userId,
+            @Valid @RequestBody CartDTO.BillingAddressRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Billing address saved",
+                orderService.updateBillingAddress(Long.parseLong(userId), request)));
+    }
 }

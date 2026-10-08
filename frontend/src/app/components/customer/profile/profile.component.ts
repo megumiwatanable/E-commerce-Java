@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
 import { User } from '../../../models/user.model';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-profile',
@@ -56,7 +57,7 @@ import { User } from '../../../models/user.model';
 })
 export class ProfileComponent implements OnInit {
   user?: User;
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private toast: ToastService) {}
   ngOnInit(): void {
     this.authService.getProfile().subscribe(res => {
       if (res.success && res.data) this.user = res.data;
@@ -65,7 +66,7 @@ export class ProfileComponent implements OnInit {
   updateProfile(): void {
     if (this.user) {
       this.authService.updateProfile({ firstName: this.user.firstName, lastName: this.user.lastName, phone: this.user.phone })
-        .subscribe(res => { if (res.success) alert('Profile updated!'); });
+        .subscribe({next: res => { if (res.success) this.toast.success('Your profile has been updated.'); }, error: () => this.toast.error('Could not update your profile.')});
     }
   }
 }

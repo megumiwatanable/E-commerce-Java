@@ -24,9 +24,10 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderDTO>> createOrder(
-            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
             @Valid @RequestBody OrderDTO.CreateOrderRequest request) {
-        OrderDTO order = orderService.createOrder(Long.parseLong(userId), request);
+        Long customerId = userId == null ? null : Long.parseLong(userId);
+        OrderDTO order = orderService.createOrder(customerId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Order created successfully", order));
     }
@@ -41,6 +42,12 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderDTO>> getOrderByNumber(@PathVariable String orderNumber) {
         OrderDTO order = orderService.getOrderByNumber(orderNumber);
         return ResponseEntity.ok(ApiResponse.success("Order retrieved", order));
+    }
+
+    @GetMapping("/guest/{checkoutToken}")
+    public ResponseEntity<ApiResponse<OrderDTO>> getGuestOrder(@PathVariable String checkoutToken) {
+        return ResponseEntity.ok(ApiResponse.success("Order retrieved",
+                orderService.getGuestOrder(checkoutToken)));
     }
 
     @GetMapping("/customer/{customerId}")

@@ -1,5 +1,7 @@
 package com.ecommerce.order.service;
 
+import com.ecommerce.order.client.ProductClient;
+import com.ecommerce.order.client.InventoryClient;
 import com.ecommerce.order.dto.CartDTO;
 import com.ecommerce.order.dto.OrderDTO;
 import com.ecommerce.order.entity.Cart;
@@ -27,7 +29,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class OrderService {
@@ -37,54 +38,22 @@ public class OrderService {
     private static final BigDecimal SHIPPING_COST = new BigDecimal("9.99");
     private static final BigDecimal FREE_SHIPPING_THRESHOLD = new BigDecimal("100.00");
 
-    // Simulated product data - in real app, this would call Product Service via Feign
-    private static final Map<Long, ProductInfo> PRODUCT_CACHE = new ConcurrentHashMap<>();
-
-    static {
-        PRODUCT_CACHE.put(1L, new ProductInfo(1L, "Wireless Bluetooth Headphones", "ELEC-001", new BigDecimal("134.99")));
-        PRODUCT_CACHE.put(2L, new ProductInfo(2L, "Smart Watch Pro", "ELEC-002", new BigDecimal("254.99")));
-        PRODUCT_CACHE.put(3L, new ProductInfo(3L, "USB-C Hub Adapter", "ELEC-003", new BigDecimal("47.49")));
-        PRODUCT_CACHE.put(4L, new ProductInfo(4L, "Portable Power Bank 20000mAh", "ELEC-004", new BigDecimal("39.99")));
-        PRODUCT_CACHE.put(5L, new ProductInfo(5L, "Mechanical Gaming Keyboard", "ELEC-005", new BigDecimal("71.99")));
-        PRODUCT_CACHE.put(6L, new ProductInfo(6L, "Classic Denim Jacket", "CLO-001", new BigDecimal("67.99")));
-        PRODUCT_CACHE.put(7L, new ProductInfo(7L, "Running Sneakers", "CLO-002", new BigDecimal("116.99")));
-        PRODUCT_CACHE.put(8L, new ProductInfo(8L, "Cotton T-Shirt Pack", "CLO-003", new BigDecimal("29.99")));
-        PRODUCT_CACHE.put(9L, new ProductInfo(9L, "Slim Fit Chinos", "CLO-004", new BigDecimal("56.99")));
-        PRODUCT_CACHE.put(10L, new ProductInfo(10L, "Winter Wool Coat", "CLO-005", new BigDecimal("149.99")));
-        PRODUCT_CACHE.put(11L, new ProductInfo(11L, "Stainless Steel Cookware Set", "HK-001", new BigDecimal("199.99")));
-        PRODUCT_CACHE.put(12L, new ProductInfo(12L, "Robot Vacuum Cleaner", "HK-002", new BigDecimal("297.49")));
-        PRODUCT_CACHE.put(13L, new ProductInfo(13L, "Air Purifier HEPA", "HK-003", new BigDecimal("161.99")));
-        PRODUCT_CACHE.put(14L, new ProductInfo(14L, "Digital Kitchen Scale", "HK-004", new BigDecimal("24.99")));
-        PRODUCT_CACHE.put(15L, new ProductInfo(15L, "Electric Kettle 1.7L", "HK-005", new BigDecimal("33.24")));
-        PRODUCT_CACHE.put(16L, new ProductInfo(16L, "Clean Code", "BK-001", new BigDecimal("35.99")));
-        PRODUCT_CACHE.put(17L, new ProductInfo(17L, "Design Patterns", "BK-002", new BigDecimal("42.49")));
-        PRODUCT_CACHE.put(18L, new ProductInfo(18L, "Spring Boot in Action", "BK-003", new BigDecimal("44.99")));
-        PRODUCT_CACHE.put(19L, new ProductInfo(19L, "Microservices Patterns", "BK-004", new BigDecimal("43.19")));
-        PRODUCT_CACHE.put(20L, new ProductInfo(20L, "Angular in Action", "BK-005", new BigDecimal("42.74")));
-        PRODUCT_CACHE.put(21L, new ProductInfo(21L, "Yoga Mat Premium", "SPT-001", new BigDecimal("29.99")));
-        PRODUCT_CACHE.put(22L, new ProductInfo(22L, "Adjustable Dumbbells", "SPT-002", new BigDecimal("239.99")));
-        PRODUCT_CACHE.put(23L, new ProductInfo(23L, "Resistance Bands Set", "SPT-003", new BigDecimal("17.99")));
-        PRODUCT_CACHE.put(24L, new ProductInfo(24L, "Water Bottle 1L", "SPT-004", new BigDecimal("24.99")));
-        PRODUCT_CACHE.put(25L, new ProductInfo(25L, "Jump Rope Speed", "SPT-005", new BigDecimal("14.24")));
-        PRODUCT_CACHE.put(26L, new ProductInfo(26L, "Vitamin C Serum", "BEA-001", new BigDecimal("21.24")));
-        PRODUCT_CACHE.put(27L, new ProductInfo(27L, "Sunscreen SPF 50", "BEA-002", new BigDecimal("14.99")));
-        PRODUCT_CACHE.put(28L, new ProductInfo(28L, "Moisturizer Cream", "BEA-003", new BigDecimal("17.99")));
-        PRODUCT_CACHE.put(29L, new ProductInfo(29L, "Building Blocks Set", "TOY-001", new BigDecimal("31.49")));
-        PRODUCT_CACHE.put(30L, new ProductInfo(30L, "RC Racing Car", "TOY-002", new BigDecimal("42.49")));
-        PRODUCT_CACHE.put(31L, new ProductInfo(31L, "Puzzle 1000 Pieces", "TOY-003", new BigDecimal("19.99")));
-    }
-
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
     private final OrderEventProducer eventProducer;
+    private final ProductClient productClient;
+    private final InventoryClient inventoryClient;
 
     public OrderService(OrderRepository orderRepository, OrderItemRepository orderItemRepository,
-                        CartRepository cartRepository, OrderEventProducer eventProducer) {
+                        CartRepository cartRepository, OrderEventProducer eventProducer,
+                        ProductClient productClient, InventoryClient inventoryClient) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
         this.eventProducer = eventProducer;
+        this.productClient = productClient;
+        this.inventoryClient = inventoryClient;
     }
 
     // ============ CART METHODS ============
@@ -102,22 +71,22 @@ public class OrderService {
         Cart cart = cartRepository.findByCustomerId(customerId)
                 .orElseGet(() -> cartRepository.save(new Cart(customerId)));
 
-        ProductInfo product = PRODUCT_CACHE.get(request.getProductId());
-        if (product == null) {
-            throw new ResourceNotFoundException("Product not found with id: " + request.getProductId());
-        }
-
+        ProductInfo product = getActiveProduct(request.getProductId());
         // Check if item already exists in cart
         Optional<CartItem> existingItem = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(request.getProductId()))
                 .findFirst();
+
+        int desiredQuantity = request.getQuantity()
+                + existingItem.map(CartItem::getQuantity).orElse(0);
+        ensureAvailable(request.getProductId(), desiredQuantity);
 
         if (existingItem.isPresent()) {
             existingItem.get().setQuantity(existingItem.get().getQuantity() + request.getQuantity());
         } else {
             CartItem cartItem = new CartItem(
                     product.id, product.name, product.sku,
-                    request.getQuantity(), product.price, null
+                    request.getQuantity(), product.price, product.imageUrl
             );
             cartItem.setCart(cart);
             cart.getItems().add(cartItem);
@@ -140,6 +109,7 @@ public class OrderService {
         if (request.getQuantity() <= 0) {
             cart.getItems().remove(cartItem);
         } else {
+            ensureAvailable(productId, request.getQuantity());
             cartItem.setQuantity(request.getQuantity());
         }
 
@@ -163,6 +133,13 @@ public class OrderService {
         cartRepository.save(cart);
     }
 
+    public CartDTO updateBillingAddress(Long customerId, CartDTO.BillingAddressRequest request) {
+        Cart cart = cartRepository.findByCustomerId(customerId)
+                .orElseGet(() -> cartRepository.save(new Cart(customerId)));
+        cart.setBillingAddress(request.getBillingAddress());
+        return mapCartToDTO(cartRepository.save(cart));
+    }
+
     // ============ ORDER METHODS ============
 
     @Transactional
@@ -176,10 +153,7 @@ public class OrderService {
         List<OrderItem> orderItems = new ArrayList<>();
 
         for (OrderDTO.OrderItemRequest itemRequest : request.getItems()) {
-            ProductInfo product = PRODUCT_CACHE.get(itemRequest.getProductId());
-            if (product == null) {
-                throw new ResourceNotFoundException("Product not found: " + itemRequest.getProductId());
-            }
+            ProductInfo product = getActiveProduct(itemRequest.getProductId());
 
             OrderItem orderItem = new OrderItem(
                     product.id, product.name, product.sku,
@@ -199,6 +173,14 @@ public class OrderService {
         Order order = new Order();
         order.setOrderNumber(generateOrderNumber());
         order.setCustomerId(customerId);
+        if (customerId == null) {
+            if (request.getGuestEmail() == null || request.getGuestEmail().isBlank()
+                    || request.getGuestPhone() == null || request.getGuestPhone().isBlank()) {
+                throw new IllegalArgumentException("Email and phone are required for guest checkout");
+            }
+            order.setGuestEmail(request.getGuestEmail());
+            order.setGuestPhone(request.getGuestPhone());
+        }
         order.setTotalAmount(totalAmount);
         order.setTaxAmount(taxAmount);
         order.setShippingAmount(shippingAmount);
@@ -225,7 +207,7 @@ public class OrderService {
         logger.info("Order created: {} with total: {}", order.getOrderNumber(), order.getFinalAmount());
 
         // Clear the cart
-        Cart cart = cartRepository.findByCustomerId(customerId).orElse(null);
+        Cart cart = customerId == null ? null : cartRepository.findByCustomerId(customerId).orElse(null);
         if (cart != null) {
             cart.getItems().clear();
             cartRepository.save(cart);
@@ -243,6 +225,12 @@ public class OrderService {
     public OrderDTO getOrderByNumber(String orderNumber) {
         Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderNumber));
+        return mapOrderToDTO(order);
+    }
+
+    public OrderDTO getGuestOrder(String checkoutToken) {
+        Order order = orderRepository.findByCheckoutToken(checkoutToken)
+                .orElseThrow(() -> new ResourceNotFoundException("Guest order not found"));
         return mapOrderToDTO(order);
     }
 
@@ -366,12 +354,15 @@ public class OrderService {
         dto.setId(order.getId());
         dto.setOrderNumber(order.getOrderNumber());
         dto.setCustomerId(order.getCustomerId());
+        dto.setGuestEmail(order.getGuestEmail());
+        dto.setGuestPhone(order.getGuestPhone());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setDiscountAmount(order.getDiscountAmount());
         dto.setTaxAmount(order.getTaxAmount());
         dto.setShippingAmount(order.getShippingAmount());
         dto.setFinalAmount(order.getFinalAmount());
         dto.setShippingAddress(order.getShippingAddress());
+        dto.setBillingAddress(order.getBillingAddress());
         dto.setPaymentStatus(order.getPaymentStatus().name());
         dto.setOrderStatus(order.getOrderStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
@@ -403,6 +394,7 @@ public class OrderService {
         dto.setCustomerId(cart.getCustomerId());
         dto.setSubtotal(cart.getSubtotal());
         dto.setTotalItems(cart.getTotalItems());
+        dto.setBillingAddress(cart.getBillingAddress());
         dto.setItems(cart.getItems().stream().map(item -> {
             CartDTO.CartItemDTO itemDTO = new CartDTO.CartItemDTO();
             itemDTO.setId(item.getId());
@@ -413,10 +405,59 @@ public class OrderService {
             itemDTO.setUnitPrice(item.getUnitPrice());
             itemDTO.setSubtotal(item.getSubtotal());
             itemDTO.setImageUrl(item.getImageUrl());
+            applyInventory(itemDTO);
             return itemDTO;
         }).toList());
         return dto;
     }
 
-    private record ProductInfo(Long id, String name, String sku, BigDecimal price) {}
+    private void ensureAvailable(Long productId, Integer requestedQuantity) {
+        try {
+            InventoryClient.InventoryResponse response = inventoryClient.getInventory(productId);
+            Integer available = response == null || response.getData() == null
+                    ? 0 : response.getData().getAvailableQuantity();
+            if (!response.isSuccess() || available == null || available < requestedQuantity) {
+                throw new InsufficientInventoryException("Product is out of stock or only " + available + " item(s) remain");
+            }
+        } catch (InsufficientInventoryException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InsufficientInventoryException("Inventory is unavailable for this product");
+        }
+    }
+
+    private void applyInventory(CartDTO.CartItemDTO item) {
+        try {
+            InventoryClient.InventoryResponse response = inventoryClient.getInventory(item.getProductId());
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                item.setAvailableQuantity(response.getData().getAvailableQuantity());
+                item.setStockStatus(response.getData().getAvailableQuantity() != null
+                        && response.getData().getAvailableQuantity() >= item.getQuantity() ? "IN_STOCK" : "OUT_OF_STOCK");
+                return;
+            }
+        } catch (Exception ignored) {
+            logger.warn("Could not load inventory for cart product {}", item.getProductId());
+        }
+        item.setAvailableQuantity(0);
+        item.setStockStatus("OUT_OF_STOCK");
+    }
+
+    private ProductInfo getActiveProduct(Long productId) {
+        try {
+            ProductClient.ProductResponse response = productClient.getProduct(productId);
+            ProductClient.ProductData product = response == null ? null : response.getData();
+            if (product == null || !response.isSuccess() || !"ACTIVE".equals(product.getStatus())) {
+                throw new ResourceNotFoundException("Product is not available: " + productId);
+            }
+            return new ProductInfo(product.getId(), product.getName(), product.getSku(),
+                    product.getFinalPrice(), product.getImageUrl());
+        } catch (ResourceNotFoundException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            logger.error("Failed to load product {} from Product Service", productId, ex);
+            throw new ResourceNotFoundException("Product not found with id: " + productId);
+        }
+    }
+
+    private record ProductInfo(Long id, String name, String sku, BigDecimal price, String imageUrl) {}
 }

@@ -14,14 +14,14 @@ import { NotificationService } from '../../../services/notification.service';
     <nav class="navbar">
       <div class="nav-container">
         <a routerLink="/" class="logo">
-          <span class="logo-icon">🛒</span>
-          <span class="logo-text">ShopHub</span>
+          <span class="logo-icon">S</span>
+          <span class="logo-text">SHOPHUB<small>everyday goods</small></span>
         </a>
 
         <div class="search-bar">
           <input type="text" [(ngModel)]="searchQuery" placeholder="Search products..."
                  (keyup.enter)="search()" />
-          <button class="search-btn" (click)="search()">🔍</button>
+          <button class="search-btn" (click)="search()" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg></button>
         </div>
 
         <div class="nav-links">
@@ -45,43 +45,45 @@ import { NotificationService } from '../../../services/notification.service';
               </div>
             </div>
 
-            <a routerLink="/cart" class="cart-icon">
-              🛒
-              <span *ngIf="cartCount > 0" class="badge">{{cartCount}}</span>
-            </a>
           </ng-container>
 
           <ng-container *ngIf="!authService.isLoggedIn()">
             <a routerLink="/login" class="nav-link">Login</a>
             <a routerLink="/register" class="nav-btn">Register</a>
           </ng-container>
+          <a routerLink="/cart" class="cart-icon" aria-label="Shopping cart">
+            <svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+            <span *ngIf="cartCount > 0" class="badge">{{cartCount}}</span>
+          </a>
         </div>
       </div>
     </nav>
   `,
   styles: [`
-    .navbar { background: #1a1a2e; color: white; padding: 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-    .nav-container { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; padding: 12px 24px; gap: 24px; }
-    .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: white; font-size: 1.5rem; font-weight: 700; }
-    .logo-icon { font-size: 1.8rem; }
+    .navbar { background: rgba(255,255,255,.96); color: #172033; padding: 0; position: sticky; top: 0; z-index: 1000; border-bottom:1px solid #e5e9ed; backdrop-filter:blur(12px); }
+    .nav-container { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; padding: 11px 24px; gap: 28px; }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #172033; font-size: 1rem; font-weight: 900; letter-spacing:.08em; }
+    .logo-icon { width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#185c4a;color:#fff;font-size:1rem; }
+    .logo-text{display:flex;flex-direction:column}.logo-text small{font-size:.55rem;letter-spacing:.12em;color:#8a939e;font-weight:700;margin-top:1px}
     .search-bar { flex: 1; max-width: 500px; display: flex; }
-    .search-bar input { flex: 1; padding: 10px 16px; border: none; border-radius: 8px 0 0 8px; font-size: 0.95rem; background: rgba(255,255,255,0.1); color: white; }
-    .search-bar input::placeholder { color: rgba(255,255,255,0.5); }
-    .search-btn { padding: 10px 16px; background: #e94560; border: none; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 1.1rem; }
+    .search-bar input { flex: 1; padding: 10px 15px; border:1px solid #dfe4e8;border-right:0; border-radius: 10px 0 0 10px; font-size: 0.9rem; background:#f7f9f9; color:#172033;outline:none }
+    .search-bar input:focus{border-color:#7eaa9d}.search-bar input::placeholder { color:#929aa5; }
+    .search-btn { width:44px;background:#185c4a;color:#fff;border:0;border-radius:0 10px 10px 0;cursor:pointer;display:grid;place-items:center}.search-btn svg{width:18px;fill:none;stroke:currentColor;stroke-width:2}
     .nav-links { display: flex; align-items: center; gap: 20px; }
-    .nav-link { color: rgba(255,255,255,0.9); text-decoration: none; font-weight: 500; padding: 8px 12px; border-radius: 6px; transition: background 0.2s; }
-    .nav-link:hover { background: rgba(255,255,255,0.1); }
-    .nav-btn { background: #e94560; color: white; text-decoration: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; }
-    .user-menu { background: none; border: none; color: white; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 4px; }
+    .nav-link { color:#4c5868;text-decoration:none;font-weight:700;padding:8px 10px;border-radius:7px;font-size:.88rem;transition:background .2s }
+    .nav-link:hover { background:#edf4f1;color:#185c4a }
+    .nav-btn { background:#185c4a;color:white;text-decoration:none;padding:9px 17px;border-radius:9px;font-weight:700;font-size:.86rem }
+    .user-menu { background:none;border:none;color:#344052;cursor:pointer;font-size:.9rem;display:flex;align-items:center;gap:4px }
     .nav-dropdown { position: relative; }
     .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background: white; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-width: 200px; overflow: hidden; z-index: 100; }
     .nav-dropdown:hover .dropdown-content { display: block; }
     .dropdown-content a, .dropdown-content button { display: block; width: 100%; padding: 12px 16px; color: #333; text-decoration: none; border: none; background: none; text-align: left; cursor: pointer; font-size: 0.95rem; }
     .dropdown-content a:hover, .dropdown-content button:hover { background: #f5f5f5; }
-    .logout-btn { color: #e94560 !important; font-weight: 600; }
-    .cart-icon { position: relative; font-size: 1.4rem; text-decoration: none; }
-    .badge { position: absolute; top: -8px; right: -8px; background: #e94560; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 50%; font-weight: 700; }
+    .logout-btn { color:#a83b2e!important;font-weight:700 }
+    .cart-icon { position:relative;width:40px;height:40px;display:grid;place-items:center;border:1px solid #dce3e1;border-radius:10px;color:#185c4a;text-decoration:none;background:#f6faf8 }.cart-icon svg{width:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .badge { position:absolute;top:-7px;right:-7px;background:#d2644f;color:white;font-size:.66rem;min-width:19px;height:19px;display:grid;place-items:center;padding:0 4px;border-radius:10px;font-weight:800;border:2px solid #fff }
     .notification-link { display: flex; align-items: center; gap: 8px; }
+    @media(max-width:800px){.nav-container{gap:12px;padding:10px 14px}.logo-text,.nav-links>.nav-link,.nav-btn{display:none}.search-bar{max-width:none}.nav-links{gap:9px}}
   `]
 })
 export class NavbarComponent implements OnInit {
@@ -101,8 +103,8 @@ export class NavbarComponent implements OnInit {
       this.cartCount = cart?.totalItems || 0;
     });
 
+    this.cartService.getCart().subscribe();
     if (this.authService.isLoggedIn()) {
-      this.cartService.getCart().subscribe();
       this.notificationService.getUnreadCount().subscribe();
       this.notificationService.unreadCount$.subscribe(count => {
         this.unreadCount = count;
@@ -118,7 +120,6 @@ export class NavbarComponent implements OnInit {
 
   logout(): void {
     this.authService.logout();
-    this.cartService.clearCart().subscribe();
     this.router.navigate(['/']);
   }
 }

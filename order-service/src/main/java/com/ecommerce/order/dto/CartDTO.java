@@ -11,6 +11,7 @@ public class CartDTO {
     private List<CartItemDTO> items;
     private BigDecimal subtotal;
     private int totalItems;
+    private String billingAddress;
 
     public static class AddItemRequest {
         @NotNull(message = "Product ID is required")
@@ -35,6 +36,13 @@ public class CartDTO {
         public void setQuantity(Integer quantity) { this.quantity = quantity; }
     }
 
+    public static class BillingAddressRequest {
+        @NotBlank(message = "Billing address is required")
+        private String billingAddress;
+        public String getBillingAddress() { return billingAddress; }
+        public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
+    }
+
     public static class CartItemDTO {
         private Long id;
         private Long productId;
@@ -44,6 +52,8 @@ public class CartDTO {
         private BigDecimal unitPrice;
         private BigDecimal subtotal;
         private String imageUrl;
+        private Integer availableQuantity;
+        private String stockStatus;
 
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
@@ -61,6 +71,10 @@ public class CartDTO {
         public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
         public String getImageUrl() { return imageUrl; }
         public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+        public Integer getAvailableQuantity() { return availableQuantity; }
+        public void setAvailableQuantity(Integer availableQuantity) { this.availableQuantity = availableQuantity; }
+        public String getStockStatus() { return stockStatus; }
+        public void setStockStatus(String stockStatus) { this.stockStatus = stockStatus; }
     }
 
     public Long getId() { return id; }
@@ -73,4 +87,6 @@ public class CartDTO {
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
     public int getTotalItems() { return totalItems; }
     public void setTotalItems(int totalItems) { this.totalItems = totalItems; }
+    public String getBillingAddress() { return billingAddress; }
+    public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
 }

@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class PaymentService {
@@ -112,15 +111,10 @@ public class PaymentService {
         );
     }
 
-    // Simulate payment - returns true ~85% of the time for CARD/UPI/NET_BANKING
-    // Always succeeds for CASH_ON_DELIVERY
+    // This project uses a deterministic local payment adapter. A real provider
+    // must replace this method and drive the result through its webhook.
     private boolean simulatePayment(String paymentMethod, java.math.BigDecimal amount) {
-        if ("CASH_ON_DELIVERY".equals(paymentMethod)) {
-            return true;
-        }
-
-        // Simulate: 85% success rate for electronic payments
-        return ThreadLocalRandom.current().nextDouble() < 0.85;
+        return true;
     }
 
     private String generatePaymentReference() {

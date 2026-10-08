@@ -1,5 +1,6 @@
 package com.ecommerce.order.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,12 +11,15 @@ public class OrderDTO {
     private Long id;
     private String orderNumber;
     private Long customerId;
+    private String guestEmail;
+    private String guestPhone;
     private BigDecimal totalAmount;
     private BigDecimal discountAmount;
     private BigDecimal taxAmount;
     private BigDecimal shippingAmount;
     private BigDecimal finalAmount;
     private String shippingAddress;
+    private String billingAddress;
     private String paymentStatus;
     private String orderStatus;
     private List<OrderItemDTO> items;
@@ -25,11 +29,22 @@ public class OrderDTO {
         @NotNull(message = "Shipping address is required")
         private String shippingAddress;
 
+        @Email(message = "A valid email is required")
+        private String guestEmail;
+
+        @Pattern(regexp = "^[0-9+() -]{8,30}$", message = "A valid phone number is required")
+        private String guestPhone;
+
+        @Valid
         @NotEmpty(message = "Order items are required")
         private List<OrderItemRequest> items;
 
         public String getShippingAddress() { return shippingAddress; }
         public void setShippingAddress(String shippingAddress) { this.shippingAddress = shippingAddress; }
+        public String getGuestEmail() { return guestEmail; }
+        public void setGuestEmail(String guestEmail) { this.guestEmail = guestEmail; }
+        public String getGuestPhone() { return guestPhone; }
+        public void setGuestPhone(String guestPhone) { this.guestPhone = guestPhone; }
         public List<OrderItemRequest> getItems() { return items; }
         public void setItems(List<OrderItemRequest> items) { this.items = items; }
     }
@@ -88,6 +103,10 @@ public class OrderDTO {
     public void setOrderNumber(String orderNumber) { this.orderNumber = orderNumber; }
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public String getGuestEmail() { return guestEmail; }
+    public void setGuestEmail(String guestEmail) { this.guestEmail = guestEmail; }
+    public String getGuestPhone() { return guestPhone; }
+    public void setGuestPhone(String guestPhone) { this.guestPhone = guestPhone; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
     public BigDecimal getDiscountAmount() { return discountAmount; }
@@ -100,6 +119,8 @@ public class OrderDTO {
     public void setFinalAmount(BigDecimal finalAmount) { this.finalAmount = finalAmount; }
     public String getShippingAddress() { return shippingAddress; }
     public void setShippingAddress(String shippingAddress) { this.shippingAddress = shippingAddress; }
+    public String getBillingAddress() { return billingAddress; }
+    public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public String getOrderStatus() { return orderStatus; }

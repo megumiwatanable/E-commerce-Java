@@ -35,6 +35,7 @@ public class OrderEventConsumer {
 
             switch (eventType) {
                 case "ORDER_CREATED" -> handleOrderCreated(event);
+                case "ORDER_PAID" -> handleOrderPaid(event);
                 case "ORDER_CANCELLED" -> handleOrderCancelled(event);
                 default -> logger.info("Ignoring event type: {}", eventType);
             }
@@ -43,11 +44,24 @@ public class OrderEventConsumer {
         }
     }
 
+    private void handleOrderPaid(JsonNode event) {
+        Long orderId = event.get("orderId").asLong();
+        Long productId = event.get("productId").asLong();
+        Integer quantity = event.get("quantity").asInt();
+
+        try {
+            inventoryService.deductInventory(productId, quantity);
+            logger.info("Reserved inventory deducted successfully for paid order: {}", orderId);
+        } catch (Exception e) {
+            logger.error("Failed to deduct inventory for paid order: {} - {}", orderId, e.getMessage(), e);
+        }
+    }
+
     private void handleOrderCreated(JsonNode event) {
         Long orderId = event.get("orderId").asLong();
         Long productId = event.get("productId").asLong();
         Integer quantity = event.get("quantity").asInt();
-        Long customerId = event.get("customerId").asLong();
+        Long customerId = event.hasNonNull("customerId") ? event.get("customerId").asLong() : null;
 
         try {
             inventoryService.reserveInventory(productId, quantity);

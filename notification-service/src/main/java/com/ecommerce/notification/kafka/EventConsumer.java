@@ -27,7 +27,7 @@ public class EventConsumer {
         try {
             JsonNode event = objectMapper.readTree(message);
             String eventType = event.get("eventType").asText();
-            Long customerId = event.has("customerId") ? event.get("customerId").asLong() : null;
+            Long customerId = event.hasNonNull("customerId") ? event.get("customerId").asLong() : null;
 
             if (customerId == null) {
                 logger.warn("No customerId in event: {}", eventType);

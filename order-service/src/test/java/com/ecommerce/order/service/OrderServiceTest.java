@@ -1,5 +1,7 @@
 package com.ecommerce.order.service;
 
+import com.ecommerce.order.client.ProductClient;
+import com.ecommerce.order.client.InventoryClient;
 import com.ecommerce.order.dto.CartDTO;
 import com.ecommerce.order.dto.OrderDTO;
 import com.ecommerce.order.entity.Cart;
@@ -41,6 +43,12 @@ class OrderServiceTest {
     @Mock
     private CartRepository cartRepository;
 
+    @Mock
+    private ProductClient productClient;
+
+    @Mock
+    private InventoryClient inventoryClient;
+
     private OrderService orderService;
 
     private Cart testCart;
@@ -52,7 +60,32 @@ class OrderServiceTest {
         // (Java 24 blocks Mockito from mocking concrete classes)
         com.ecommerce.order.kafka.OrderEventProducer noopProducer =
             new com.ecommerce.order.kafka.OrderEventProducer(null, new com.fasterxml.jackson.databind.ObjectMapper());
-        orderService = new OrderService(orderRepository, orderItemRepository, cartRepository, noopProducer);
+        orderService = new OrderService(orderRepository, orderItemRepository, cartRepository, noopProducer, productClient, inventoryClient);
+
+        lenient().when(inventoryClient.getInventory(anyLong())).thenAnswer(invocation -> {
+            InventoryClient.InventoryData data = new InventoryClient.InventoryData();
+            data.setAvailableQuantity(100);
+            data.setStockStatus("IN_STOCK");
+            InventoryClient.InventoryResponse response = new InventoryClient.InventoryResponse();
+            response.setSuccess(true);
+            response.setData(data);
+            return response;
+        });
+
+        lenient().when(productClient.getProduct(anyLong())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0);
+            if (id == 999L) return null;
+            ProductClient.ProductData data = new ProductClient.ProductData();
+            data.setId(id);
+            data.setName(id == 1L ? "Test Product" : "Test Product " + id);
+            data.setSku(id == 1L ? "ELEC-001" : "SKU-" + id);
+            data.setFinalPrice(BigDecimal.valueOf(100));
+            data.setStatus("ACTIVE");
+            ProductClient.ProductResponse response = new ProductClient.ProductResponse();
+            response.setSuccess(true);
+            response.setData(data);
+            return response;
+        });
 
         testCart = new Cart(1L);
         testCart.setId(1L);

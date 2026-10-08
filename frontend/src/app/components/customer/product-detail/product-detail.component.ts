@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ProductService } from '../../../services/product.service';
 import { CartService } from '../../../services/cart.service';
+import { ToastService } from '../../../services/toast.service';
 import { Product } from '../../../models/product.model';
 
 @Component({
@@ -88,7 +89,8 @@ export class ProductDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -104,18 +106,18 @@ export class ProductDetailComponent implements OnInit {
 
   addToCart(): void {
     if (this.product) {
-      this.cartService.addToCart(this.product.id, this.quantity).subscribe({
-        next: () => alert('Added to cart!'),
-        error: () => alert('Failed to add to cart')
+      this.cartService.addToCart(this.product, this.quantity).subscribe({
+        next: () => this.toast.success(`${this.product?.name} was added to your cart.`),
+        error: error => this.toast.error(error.error?.message || 'Failed to add this product to your cart.')
       });
     }
   }
 
   buyNow(): void {
     if (this.product) {
-      this.cartService.addToCart(this.product.id, this.quantity).subscribe({
+      this.cartService.addToCart(this.product, this.quantity).subscribe({
         next: () => this.router.navigate(['/checkout']),
-        error: () => alert('Failed')
+        error: error => this.toast.error(error.error?.message || 'This product could not be added.')
       });
     }
   }

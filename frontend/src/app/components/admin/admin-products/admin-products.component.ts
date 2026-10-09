@@ -5,6 +5,7 @@ import { ProductService } from '../../../services/product.service';
 import { Product, Category, PageResponse } from '../../../models/product.model';
 import { InventoryService, InventoryStatus } from '../../../services/inventory.service';
 import { ToastService } from '../../../services/toast.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-products',
@@ -59,7 +60,7 @@ import { ToastService } from '../../../services/toast.service';
           <tr *ngFor="let p of products">
             <td>{{p.sku}}</td>
             <td>{{p.name}}</td>
-            <td>{{p.categoryName || '-'}}</td>
+            <td>{{(p.categoryNames || [p.categoryName]).join(', ') || '-'}}</td>
             <td>\${{p.finalPrice.toFixed(2)}}</td>
             <td><span class="stock" [class.out]="!inventoryFor(p.id)?.availableQuantity">{{inventoryFor(p.id)?.stockStatus || 'NOT SET'}}</span><small *ngIf="inventoryFor(p.id)"> {{inventoryFor(p.id)?.availableQuantity}} available</small></td>
             <td><span class="badge" [class]="p.status.toLowerCase()">{{p.status}}</span></td>
@@ -114,7 +115,7 @@ export class AdminProductsComponent implements OnInit {
   form: any = {};
   inventory = new Map<number, InventoryStatus>();
 
-  constructor(private productService: ProductService, private inventoryService: InventoryService, private toast: ToastService) {}
+  constructor(private productService: ProductService, private inventoryService: InventoryService, private toast: ToastService, private router: Router) {}
   ngOnInit(): void {
     this.loadProducts();
     this.loadInventory();
@@ -133,10 +134,7 @@ export class AdminProductsComponent implements OnInit {
   }
 
   editProduct(p: Product): void {
-    this.editingProduct = p;
-    const stock=this.inventory.get(p.id);
-    this.form = { ...p, availableQuantity:stock?.availableQuantity??0, reorderLevel:stock?.reorderLevel??10, warehouseLocation:stock?.warehouseLocation||'' };
-    this.showForm = true;
+    this.router.navigate(['/admin/products', p.id, 'edit']);
   }
 
   saveProduct(): void {
@@ -157,13 +155,13 @@ export class AdminProductsComponent implements OnInit {
   deleteProduct(id: number): void {
     if (confirm('Delete this product?')) {
       const deactivate=()=>this.productService.deleteProduct(id).subscribe({next:()=>{this.toast.success('Product deactivated.');this.loadProducts();this.loadInventory()},error:e=>this.toast.error(e.error?.message||'Could not delete product.')});
-      if(this.inventory.has(id))this.inventoryService.delete(id).subscribe({next:deactivate,error:e=>this.toast.error(e.error?.message||'Could not delete linked inventory.')});else deactivate();
+      deactivate();
     }
   }
 
   inventoryFor(id:number):InventoryStatus|undefined{return this.inventory.get(id)}
-  openCreate():void{this.editingProduct=undefined;this.form={discountPercentage:0,availableQuantity:0,reorderLevel:10,warehouseLocation:''};this.showForm=true}
-  loadInventory():void{this.inventoryService.getAll().subscribe(r=>{this.inventory.clear();(r.data||[]).forEach(i=>this.inventory.set(i.productId,i))})}
+  openCreate():void{this.router.navigate(['/admin/products/new'])}
+  loadInventory():void{this.inventoryService.getAll().subscribe(r=>{this.inventory.clear();(r.data||[]).forEach(i=>{const current=this.inventory.get(i.productId);if(current){current.availableQuantity+=i.availableQuantity;current.reservedQuantity+=i.reservedQuantity;current.stockStatus=current.availableQuantity===0?'OUT_OF_STOCK':'IN_STOCK'}else this.inventory.set(i.productId,{...i})})})}
   finishSave(message:string):void{this.toast.success(message);this.cancelEdit();this.loadProducts();this.loadInventory()}
   cancelEdit(): void { this.showForm = false; this.editingProduct = undefined; this.form = {}; }
 }

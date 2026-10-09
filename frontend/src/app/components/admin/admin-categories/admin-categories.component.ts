@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
 import { Category } from '../../../models/product.model';
 import { ToastService } from '../../../services/toast.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-categories',
@@ -66,7 +67,7 @@ export class AdminCategoriesComponent implements OnInit {
   showForm = false;
   editingCategory?: Category;
   form: any = {};
-  constructor(private productService: ProductService, private toast: ToastService) {}
+  constructor(private productService: ProductService, private toast: ToastService, private router: Router) {}
   ngOnInit(): void { this.loadCategories(); }
   loadCategories(): void {
     this.productService.getCategories().subscribe(res => { if (res.success && res.data) this.categories = res.data; });
@@ -80,6 +81,6 @@ export class AdminCategoriesComponent implements OnInit {
   deleteCategory(id: number): void {
     if (confirm('Delete this category?')) this.productService.deleteCategory(id).subscribe({next:()=>{this.toast.success('Category deactivated.');this.loadCategories()},error:e=>this.toast.error(e.error?.message||'Could not delete category.')});
   }
-  openForm(category?:Category):void{this.editingCategory=category;this.form=category?{name:category.name,description:category.description}:{};this.showForm=true}
+  openForm(category?:Category):void{this.router.navigate(category?['/admin/categories',category.id,'edit']:['/admin/categories/new'])}
   cancelEdit():void{this.showForm=false;this.editingCategory=undefined;this.form={}}
 }

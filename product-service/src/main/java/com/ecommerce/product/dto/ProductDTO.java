@@ -3,6 +3,7 @@ package com.ecommerce.product.dto;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ProductDTO {
 
@@ -12,6 +13,8 @@ public class ProductDTO {
     private String description;
     private Long categoryId;
     private String categoryName;
+    private List<Long> categoryIds;
+    private List<String> categoryNames;
     private String brand;
     private BigDecimal price;
     private BigDecimal discountPercentage;
@@ -31,7 +34,8 @@ public class ProductDTO {
 
         private String description;
 
-        @NotNull(message = "Category is required")
+        private List<Long> categoryIds;
+
         private Long categoryId;
 
         private String brand;
@@ -52,6 +56,8 @@ public class ProductDTO {
         public void setName(String name) { this.name = name; }
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
+        public List<Long> getCategoryIds() { return categoryIds; }
+        public void setCategoryIds(List<Long> categoryIds) { this.categoryIds = categoryIds; }
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
         public String getBrand() { return brand; }
@@ -69,6 +75,8 @@ public class ProductDTO {
         private String name;
 
         private String description;
+
+        private List<Long> categoryIds;
 
         private Long categoryId;
 
@@ -89,6 +97,8 @@ public class ProductDTO {
         public void setName(String name) { this.name = name; }
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
+        public List<Long> getCategoryIds() { return categoryIds; }
+        public void setCategoryIds(List<Long> categoryIds) { this.categoryIds = categoryIds; }
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
         public String getBrand() { return brand; }
@@ -116,6 +126,10 @@ public class ProductDTO {
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public List<Long> getCategoryIds() { return categoryIds; }
+    public void setCategoryIds(List<Long> categoryIds) { this.categoryIds = categoryIds; }
+    public List<String> getCategoryNames() { return categoryNames; }
+    public void setCategoryNames(List<String> categoryNames) { this.categoryNames = categoryNames; }
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }
     public BigDecimal getPrice() { return price; }

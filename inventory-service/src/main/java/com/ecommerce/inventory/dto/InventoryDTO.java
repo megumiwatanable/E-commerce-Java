@@ -7,6 +7,7 @@ public class InventoryDTO {
 
     private Long id;
     private Long productId;
+    private String sourceCode;
     private String sku;
     private Integer availableQuantity;
     private Integer reservedQuantity;
@@ -18,6 +19,9 @@ public class InventoryDTO {
     public static class CreateRequest {
         @NotNull(message = "Product ID is required")
         private Long productId;
+
+        @NotBlank(message = "Source code is required")
+        private String sourceCode = "MAIN";
 
         @NotBlank(message = "SKU is required")
         private String sku;
@@ -33,6 +37,8 @@ public class InventoryDTO {
 
         public Long getProductId() { return productId; }
         public void setProductId(Long productId) { this.productId = productId; }
+        public String getSourceCode() { return sourceCode; }
+        public void setSourceCode(String sourceCode) { this.sourceCode = sourceCode; }
         public String getSku() { return sku; }
         public void setSku(String sku) { this.sku = sku; }
         public Integer getAvailableQuantity() { return availableQuantity; }
@@ -79,6 +85,8 @@ public class InventoryDTO {
     public void setId(Long id) { this.id = id; }
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
+    public String getSourceCode() { return sourceCode; }
+    public void setSourceCode(String sourceCode) { this.sourceCode = sourceCode; }
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }
     public Integer getAvailableQuantity() { return availableQuantity; }

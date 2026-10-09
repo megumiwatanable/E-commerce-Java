@@ -5,6 +5,7 @@ import { InventoryService, InventoryStatus } from '../../../services/inventory.s
 import { ProductService } from '../../../services/product.service';
 import { Product } from '../../../models/product.model';
 import { ToastService } from '../../../services/toast.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-inventory', standalone: true, imports: [CommonModule, FormsModule],
@@ -22,9 +23,9 @@ import { ToastService } from '../../../services/toast.service';
         </div>
         <div class="actions"><button class="primary" type="submit">Save inventory</button><button type="button" class="secondary" (click)="cancel()">Cancel</button></div>
       </form>
-      <div class="table-wrap"><table><thead><tr><th>Product</th><th>SKU</th><th>Available</th><th>Reserved</th><th>Reorder</th><th>Status</th><th>Location</th><th>Actions</th></tr></thead><tbody>
-        <tr *ngFor="let inv of inventory"><td>#{{inv.productId}} · {{productName(inv.productId)}}</td><td>{{inv.sku}}</td><td>{{inv.availableQuantity}}</td><td>{{inv.reservedQuantity}}</td><td>{{inv.reorderLevel}}</td><td><span class="badge" [class.out]="inv.stockStatus==='OUT_OF_STOCK'" [class.low]="inv.stockStatus==='LOW_STOCK'">{{inv.stockStatus}}</span></td><td>{{inv.warehouseLocation||'—'}}</td><td><button class="edit" (click)="openEdit(inv)">Edit</button><button class="delete" (click)="remove(inv)">Delete</button></td></tr>
-        <tr *ngIf="!inventory.length"><td colspan="8" class="empty">No inventory records.</td></tr>
+      <div class="table-wrap"><table><thead><tr><th>Product</th><th>Source</th><th>SKU</th><th>Available</th><th>Reserved</th><th>Reorder</th><th>Status</th><th>Location</th><th>Actions</th></tr></thead><tbody>
+        <tr *ngFor="let inv of inventory"><td>#{{inv.productId}} · {{productName(inv.productId)}}</td><td>{{inv.sourceCode}}</td><td>{{inv.sku}}</td><td>{{inv.availableQuantity}}</td><td>{{inv.reservedQuantity}}</td><td>{{inv.reorderLevel}}</td><td><span class="badge" [class.out]="inv.stockStatus==='OUT_OF_STOCK'" [class.low]="inv.stockStatus==='LOW_STOCK'">{{inv.stockStatus}}</span></td><td>{{inv.warehouseLocation||'—'}}</td><td><button class="edit" (click)="openEdit(inv)">Edit</button><button class="delete" (click)="remove(inv)">Delete</button></td></tr>
+        <tr *ngIf="!inventory.length"><td colspan="9" class="empty">No inventory records.</td></tr>
       </tbody></table></div>
     </div>`,
   styles: [`
@@ -33,14 +34,14 @@ import { ToastService } from '../../../services/toast.service';
 })
 export class AdminInventoryComponent implements OnInit {
   inventory:InventoryStatus[]=[];products:Product[]=[];showForm=false;editing?:InventoryStatus;form:any={};
-  constructor(private inventoryService:InventoryService,private productService:ProductService,private toast:ToastService){}
+  constructor(private inventoryService:InventoryService,private productService:ProductService,private toast:ToastService,private router:Router){}
   ngOnInit():void{this.load();this.productService.getProducts(0,100).subscribe(r=>this.products=r.data?.content||[])}
   load():void{this.inventoryService.getAll().subscribe({next:r=>this.inventory=r.data||[],error:()=>this.toast.error('Could not load inventory.')})}
   productName(id:number):string{return this.products.find(p=>p.id===id)?.name||'Unknown product'}
-  openCreate():void{this.editing=undefined;this.form={availableQuantity:0,reorderLevel:10,warehouseLocation:''};this.showForm=true}
-  openEdit(inv:InventoryStatus):void{this.editing=inv;this.form={...inv};this.showForm=true}
+  openCreate():void{this.router.navigate(['/admin/inventory/new'])}
+  openEdit(inv:InventoryStatus):void{this.router.navigate(['/admin/inventory',inv.id,'edit'])}
   selectProduct():void{const p=this.products.find(x=>x.id===this.form.productId);if(p)this.form.sku=p.sku}
   save():void{const op=this.editing?this.inventoryService.update(this.editing.productId,this.form):this.inventoryService.create(this.form);op.subscribe({next:()=>{this.toast.success(`Inventory ${this.editing?'updated':'created'}.`);this.cancel();this.load()},error:e=>this.toast.error(e.error?.message||'Could not save inventory.')})}
-  remove(inv:InventoryStatus):void{if(!confirm(`Delete inventory for ${inv.sku}?`))return;this.inventoryService.delete(inv.productId).subscribe({next:()=>{this.toast.success('Inventory deleted.');this.load()},error:e=>this.toast.error(e.error?.message||'Could not delete inventory.')})}
+  remove(inv:InventoryStatus):void{if(!inv.id||!confirm(`Delete ${inv.sourceCode} inventory for ${inv.sku}?`))return;this.inventoryService.delete(inv.id).subscribe({next:()=>{this.toast.success('Inventory deleted.');this.load()},error:e=>this.toast.error(e.error?.message||'Could not delete inventory.')})}
   cancel():void{this.showForm=false;this.editing=undefined;this.form={}}
 }

@@ -3,6 +3,8 @@ package com.ecommerce.product.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -21,8 +23,15 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private Long categoryId;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private Set<Category> categories = new LinkedHashSet<>();
+
+    @Transient
+    private Long legacyCategoryId;
 
     @Column(length = 100)
     private String brand;
@@ -87,7 +96,7 @@ public class Product {
         this.sku = sku;
         this.name = name;
         this.description = description;
-        this.categoryId = categoryId;
+        this.legacyCategoryId = categoryId;
         this.brand = brand;
         this.price = price;
         this.discountPercentage = discountPercentage;
@@ -108,8 +117,10 @@ public class Product {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public Set<Category> getCategories() { return categories; }
+    public void setCategories(Set<Category> categories) { this.categories = categories; }
+    public Long getCategoryId() { return legacyCategoryId; }
+    public void setCategoryId(Long categoryId) { this.legacyCategoryId = categoryId; }
 
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }

@@ -15,11 +15,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.LinkedHashSet;
 
 @Service
+@Transactional
 public class ProductService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
@@ -83,7 +86,7 @@ public class ProductService {
         product.setSku(request.getSku());
         product.setName(request.getName());
         product.setDescription(request.getDescription());
-        product.setCategoryId(request.getCategoryId());
+        product.setCategories(resolveCategories(normalizeCategoryIds(request.getCategoryIds(), request.getCategoryId())));
         product.setBrand(request.getBrand());
         product.setPrice(request.getPrice());
         product.setDiscountPercentage(request.getDiscountPercentage() != null ?
@@ -102,7 +105,9 @@ public class ProductService {
 
         if (request.getName() != null) product.setName(request.getName());
         if (request.getDescription() != null) product.setDescription(request.getDescription());
-        if (request.getCategoryId() != null) product.setCategoryId(request.getCategoryId());
+        if (request.getCategoryIds() != null || request.getCategoryId() != null) {
+            product.setCategories(resolveCategories(normalizeCategoryIds(request.getCategoryIds(), request.getCategoryId())));
+        }
         if (request.getBrand() != null) product.setBrand(request.getBrand());
         if (request.getPrice() != null) product.setPrice(request.getPrice());
         if (request.getDiscountPercentage() != null) product.setDiscountPercentage(request.getDiscountPercentage());
@@ -165,7 +170,20 @@ public class ProductService {
         dto.setSku(product.getSku());
         dto.setName(product.getName());
         dto.setDescription(product.getDescription());
-        dto.setCategoryId(product.getCategoryId());
+        List<Category> categories = product.getCategories().stream().toList();
+        dto.setCategoryIds(categories.stream().map(Category::getId).toList());
+        dto.setCategoryNames(categories.stream().map(Category::getName).toList());
+        if (!categories.isEmpty()) {
+            dto.setCategoryId(categories.get(0).getId());
+            dto.setCategoryName(categories.get(0).getName());
+        } else if (product.getCategoryId() != null) {
+            dto.setCategoryId(product.getCategoryId());
+            categoryRepository.findById(product.getCategoryId()).ifPresent(category -> {
+                dto.setCategoryName(category.getName());
+                dto.setCategoryIds(List.of(category.getId()));
+                dto.setCategoryNames(List.of(category.getName()));
+            });
+        }
         dto.setBrand(product.getBrand());
         dto.setPrice(product.getPrice());
         dto.setDiscountPercentage(product.getDiscountPercentage());
@@ -175,11 +193,30 @@ public class ProductService {
         dto.setStatus(product.getStatus().name());
         dto.setCreatedAt(product.getCreatedAt());
 
-        // Try to get category name
-        categoryRepository.findById(product.getCategoryId())
-                .ifPresent(cat -> dto.setCategoryName(cat.getName()));
-
         return dto;
+    }
+
+    private LinkedHashSet<Category> resolveCategories(List<Long> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            throw new ResourceNotFoundException("At least one category is required");
+        }
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+        if (categories.isEmpty()) {
+            categories = categoryIds.stream()
+                    .map(categoryRepository::findById)
+                    .flatMap(java.util.Optional::stream)
+                    .toList();
+        }
+        if (categories.size() != categoryIds.stream().distinct().count()) {
+            throw new ResourceNotFoundException("One or more categories do not exist");
+        }
+        return new LinkedHashSet<>(categories);
+    }
+
+    private List<Long> normalizeCategoryIds(List<Long> categoryIds, Long legacyCategoryId) {
+        return categoryIds != null && !categoryIds.isEmpty()
+                ? categoryIds
+                : legacyCategoryId == null ? List.of() : List.of(legacyCategoryId);
     }
 
     private CategoryDTO mapCategoryToDTO(Category category) {

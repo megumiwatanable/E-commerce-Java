@@ -1,0 +1,23 @@
+<div class="page">
+  <header><div><a routerLink="/admin/products">← Products</a><h1>{{productId ? 'Edit product' : 'New product'}}</h1><p>Assign multiple categories and inventory sources.</p></div></header>
+  <form (ngSubmit)="save()">
+    <section><h2>Product information</h2><div class="grid">
+      <label>SKU<input [(ngModel)]="form.sku" name="sku" required [disabled]="!!productId"></label>
+      <label>Name<input [(ngModel)]="form.name" name="name" required></label>
+      <label>Brand<input [(ngModel)]="form.brand" name="brand"></label>
+      <label>Price<input type="number" min="0.01" step="0.01" [(ngModel)]="form.price" name="price" required></label>
+      <label>Discount %<input type="number" min="0" max="100" [(ngModel)]="form.discountPercentage" name="discount"></label>
+      <label>Image URL<input [(ngModel)]="form.imageUrl" name="image"></label>
+    </div><label>Description<textarea [(ngModel)]="form.description" name="description"></textarea></label></section>
+    <section><h2>Categories</h2><div class="checks"><label *ngFor="let c of categories"><input type="checkbox" [checked]="form.categoryIds?.includes(c.id)" (change)="toggleCategory(c.id, $any($event.target).checked)">{{c.name}}</label></div></section>
+    <section><div class="section-head"><h2>Inventory sources</h2><button type="button" (click)="addInventory()">+ Add source</button></div>
+      <div class="source" *ngFor="let stock of inventories; let i=index"><div class="grid">
+        <label>Source code<input [(ngModel)]="stock.sourceCode" name="source{{i}}" required [disabled]="!!stock.id"></label>
+        <label>Available<input type="number" min="0" [(ngModel)]="stock.availableQuantity" name="qty{{i}}" required></label>
+        <label>Reorder level<input type="number" min="0" [(ngModel)]="stock.reorderLevel" name="reorder{{i}}" required></label>
+        <label>Warehouse<input [(ngModel)]="stock.warehouseLocation" name="warehouse{{i}}"></label>
+      </div><button class="remove" type="button" (click)="removeInventory(i)">Remove source</button></div>
+    </section>
+    <div class="actions"><button class="primary" type="submit" [disabled]="saving">{{saving ? 'Saving…' : 'Save product'}}</button><a routerLink="/admin/products">Cancel</a></div>
+  </form>
+</div>

@@ -13,6 +13,8 @@ export interface Product {
   description: string;
   categoryId: number;
   categoryName?: string;
+  categoryIds: number[];
+  categoryNames: string[];
   brand: string;
   price: number;
   discountPercentage: number;

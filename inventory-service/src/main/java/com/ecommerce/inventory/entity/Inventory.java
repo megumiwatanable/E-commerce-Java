@@ -11,8 +11,11 @@ public class Inventory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "product_id", nullable = false, unique = true)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
+
+    @Column(name = "source_code", nullable = false, length = 50)
+    private String sourceCode = "MAIN";
 
     @Column(nullable = false, length = 50)
     private String sku;
@@ -60,6 +63,8 @@ public class Inventory {
 
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
+    public String getSourceCode() { return sourceCode; }
+    public void setSourceCode(String sourceCode) { this.sourceCode = sourceCode; }
 
     public String getSku() { return sku; }
     public void setSku(String sku) { this.sku = sku; }

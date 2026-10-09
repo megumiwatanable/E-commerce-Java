@@ -14,6 +14,8 @@ export interface AdminSession {
 
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
+  private readonly tokenStorageKey = 'adminToken';
+  private readonly userStorageKey = 'adminUser';
   private readonly sessionSubject = new BehaviorSubject<AdminSession | null>(this.readSession());
   readonly session$ = this.sessionSubject.asObservable();
 
@@ -23,8 +25,8 @@ export class AdminAuthService {
     return this.http.post<ApiResponse<AdminSession>>(`${API_BASE_URL}/admin/auth/login`, request).pipe(
       tap(response => {
         if (response.success && response.data) {
-          localStorage.setItem('adminToken', response.data.token);
-          localStorage.setItem('adminUser', JSON.stringify(response.data));
+          localStorage.setItem(this.tokenStorageKey, response.data.token);
+          localStorage.setItem(this.userStorageKey, JSON.stringify(response.data));
           this.sessionSubject.next(response.data);
         }
       })
@@ -32,17 +34,29 @@ export class AdminAuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
+    localStorage.removeItem(this.tokenStorageKey);
+    localStorage.removeItem(this.userStorageKey);
     this.sessionSubject.next(null);
   }
 
-  getToken(): string | null { return localStorage.getItem('adminToken'); }
-  isLoggedIn(): boolean { return !!this.getToken(); }
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenStorageKey);
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.getToken();
+  }
 
   private readSession(): AdminSession | null {
-    const raw = localStorage.getItem('adminUser');
+    const raw = localStorage.getItem(this.userStorageKey);
     if (!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+
+    try {
+      return JSON.parse(raw) as AdminSession;
+    } catch {
+      localStorage.removeItem(this.tokenStorageKey);
+      localStorage.removeItem(this.userStorageKey);
+      return null;
+    }
   }
 }

@@ -18,7 +18,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsBySku(String sku);
 
-    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
+    @Query("SELECT DISTINCT p FROM Product p JOIN p.categories c WHERE c.id = :categoryId")
+    Page<Product> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
 
     Page<Product> findByStatus(Product.ProductStatus status, Pageable pageable);
 
@@ -29,7 +30,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> searchProducts(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT p FROM Product p WHERE p.status = com.ecommerce.product.entity.Product$ProductStatus.ACTIVE AND " +
-           "(:categoryId IS NULL OR p.categoryId = :categoryId) AND " +
+           "(:categoryId IS NULL OR EXISTS (SELECT c.id FROM p.categories c WHERE c.id = :categoryId)) AND " +
            "(:brand IS NULL OR LOWER(p.brand) = LOWER(:brand)) AND " +
            "(:minPrice IS NULL OR p.finalPrice >= :minPrice) AND " +
            "(:maxPrice IS NULL OR p.finalPrice <= :maxPrice)")
@@ -43,5 +44,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.status = com.ecommerce.product.entity.Product$ProductStatus.ACTIVE ORDER BY p.rating DESC")
     List<Product> findTopRatedProducts(Pageable pageable);
 
-    List<Product> findByCategoryIdAndStatus(Long categoryId, Product.ProductStatus status);
+    @Query("SELECT DISTINCT p FROM Product p JOIN p.categories c WHERE c.id = :categoryId AND p.status = :status")
+    List<Product> findByCategoryIdAndStatus(@Param("categoryId") Long categoryId,
+                                            @Param("status") Product.ProductStatus status);
 }

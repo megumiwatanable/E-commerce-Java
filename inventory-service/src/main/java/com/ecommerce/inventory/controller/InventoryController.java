@@ -32,6 +32,12 @@ public class InventoryController {
         return ResponseEntity.ok(ApiResponse.success("Inventory retrieved", inventory));
     }
 
+    @GetMapping("/product/{productId}")
+    public ResponseEntity<ApiResponse<List<InventoryDTO>>> getInventorySources(@PathVariable Long productId) {
+        return ResponseEntity.ok(ApiResponse.success("Inventory sources retrieved",
+                inventoryService.getInventorySources(productId)));
+    }
+
     @GetMapping("/low-stock")
     public ResponseEntity<ApiResponse<List<InventoryDTO>>> getLowStockItems() {
         List<InventoryDTO> inventory = inventoryService.getLowStockItems();
@@ -46,17 +52,17 @@ public class InventoryController {
                 .body(ApiResponse.success("Inventory created", inventory));
     }
 
-    @PutMapping("/{productId}")
+    @PutMapping("/records/{id}")
     public ResponseEntity<ApiResponse<InventoryDTO>> updateInventory(
-            @PathVariable Long productId,
+            @PathVariable Long id,
             @RequestBody InventoryDTO.UpdateRequest request) {
-        InventoryDTO inventory = inventoryService.updateInventory(productId, request);
+        InventoryDTO inventory = inventoryService.updateInventory(id, request);
         return ResponseEntity.ok(ApiResponse.success("Inventory updated", inventory));
     }
 
-    @DeleteMapping("/{productId}")
-    public ResponseEntity<ApiResponse<Void>> deleteInventory(@PathVariable Long productId) {
-        inventoryService.deleteInventory(productId);
+    @DeleteMapping("/records/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteInventory(@PathVariable Long id) {
+        inventoryService.deleteInventory(id);
         return ResponseEntity.ok(ApiResponse.success("Inventory deleted"));
     }
 

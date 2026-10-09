@@ -1,0 +1,30 @@
+<div class="page">
+  <header>
+    <div><h1>Customers</h1><p>Create and manage storefront customer accounts.</p></div>
+    <button type="button" (click)="openForm()">+ Add customer</button>
+  </header>
+
+  <form *ngIf="showForm" (ngSubmit)="saveCustomer()" class="card">
+    <h2>{{ editingCustomer ? 'Edit customer' : 'Add customer' }}</h2>
+    <div class="grid">
+      <label>First name<input [(ngModel)]="form.firstName" name="firstName" required /></label>
+      <label>Last name<input [(ngModel)]="form.lastName" name="lastName" required /></label>
+      <label>Email<input type="email" [(ngModel)]="form.email" name="email" required /></label>
+      <label>Phone<input [(ngModel)]="form.phone" name="phone" /></label>
+      <label>Password {{ editingCustomer ? '(leave blank to keep)' : '' }}<input type="password" [(ngModel)]="form.password" name="password" [required]="!editingCustomer" /></label>
+      <label>Status<select [(ngModel)]="form.status" name="status"><option>ACTIVE</option><option>INACTIVE</option><option>SUSPENDED</option></select></label>
+    </div>
+    <div class="actions"><button type="submit">Save customer</button><button type="button" class="secondary" (click)="closeForm()">Cancel</button></div>
+  </form>
+
+  <div class="table"><table>
+    <thead><tr><th>Customer</th><th>Email</th><th>Phone</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+    <tbody><tr *ngFor="let customer of customers">
+      <td><b>{{ customer.firstName }} {{ customer.lastName }}</b><small>#{{ customer.id }}</small></td>
+      <td>{{ customer.email }}</td><td>{{ customer.phone || '—' }}</td>
+      <td><span [class.inactive]="customer.status !== 'ACTIVE'">{{ customer.status }}</span></td>
+      <td>{{ customer.createdAt | date: 'mediumDate' }}</td>
+      <td><button type="button" class="edit" (click)="openForm(customer)">Edit</button><button type="button" class="delete" (click)="deactivateCustomer(customer)">Deactivate</button></td>
+    </tr></tbody>
+  </table></div>
+</div>

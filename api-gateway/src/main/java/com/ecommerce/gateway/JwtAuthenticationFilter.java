@@ -22,10 +22,19 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String ADMIN = "ADMIN";
+    private static final String CUSTOMER = "CUSTOMER";
+    private static final String USER_RESOURCE_PATTERN = "^/api/users/\\d+(/admin)?$";
+    private static final String INVENTORY_ITEM_PATTERN = "^/api/inventory/\\d+$";
+    private static final String ORDER_STATUS_PATTERN = "^/api/orders/\\d+/status$";
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -39,35 +48,34 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
 
-        // Browser preflight requests do not include the Authorization header.
         if (request.getMethod() == HttpMethod.OPTIONS) {
             return chain.filter(exchange);
         }
 
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        // Public requests may omit JWT. If a token is present, still parse it so
-        // downstream services receive the authenticated user's identity.
-        if ((authHeader == null || !authHeader.startsWith("Bearer ")) && isPublicRequest(request)) {
+        boolean publicRequest = isPublicRequest(request);
+        boolean adminRequest = isAdminRequest(request);
+
+        if (!hasBearerToken(authHeader) && publicRequest) {
             return chain.filter(exchange);
         }
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (!hasBearerToken(authHeader)) {
             return unauthorizedResponse(exchange, "Missing or invalid Authorization header");
         }
 
-        String token = authHeader.substring(7);
+        String token = authHeader.substring(BEARER_PREFIX.length());
         try {
             Claims claims = parseToken(token);
             String userId = claims.getSubject();
             String email = claims.get("email", String.class);
             String identityType = claims.get("type", String.class);
 
-            if (isAdminRequest(request) && !"ADMIN".equals(identityType)) {
+            if (adminRequest && !ADMIN.equals(identityType)) {
                 return errorResponse(exchange, HttpStatus.FORBIDDEN, "Administrator access required");
             }
-            if (!isAdminRequest(request) && !isPublicRequest(request) && !"CUSTOMER".equals(identityType)) {
+            if (!adminRequest && !publicRequest && !CUSTOMER.equals(identityType)) {
                 return errorResponse(exchange, HttpStatus.FORBIDDEN, "Customer access required");
             }
 
@@ -85,15 +93,33 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
+    private boolean hasBearerToken(String authorizationHeader) {
+        return authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX);
+    }
+
     private boolean isPublicRequest(ServerHttpRequest request) {
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) return true;
-        if (method == HttpMethod.POST && path.equals("/api/admin/auth/login")) return true;
-        if (method == HttpMethod.GET && (path.startsWith("/api/products") || path.startsWith("/api/categories"))) return true;
-        if (method == HttpMethod.GET && (path.matches("^/api/inventory/\\d+$") || path.startsWith("/api/inventory/check/"))) return true;
-        if (method == HttpMethod.GET && path.startsWith("/api/orders/guest/")) return true;
-        if (method == HttpMethod.POST && path.equals("/api/checkout/place-order")) return true;
+        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
+            return true;
+        }
+        if (method == HttpMethod.POST && path.equals("/api/admin/auth/login")) {
+            return true;
+        }
+        if (method == HttpMethod.GET
+                && (path.startsWith("/api/products") || path.startsWith("/api/categories"))) {
+            return true;
+        }
+        if (method == HttpMethod.GET
+                && (path.matches(INVENTORY_ITEM_PATTERN) || path.startsWith("/api/inventory/check/"))) {
+            return true;
+        }
+        if (method == HttpMethod.GET && path.startsWith("/api/orders/guest/")) {
+            return true;
+        }
+        if (method == HttpMethod.POST && path.equals("/api/checkout/place-order")) {
+            return true;
+        }
         return path.startsWith("/actuator") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
     }
 
@@ -108,20 +134,33 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private Claims parseToken(String token, String secret) {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         SecretKey key = Keys.hmacShaKeyFor(keyBytes);
-        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private boolean isAdminRequest(ServerHttpRequest request) {
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
-        if (path.startsWith("/api/admin/")) return true;
-        if (path.equals("/api/users")) return true;
-        if (path.matches("^/api/users/\\d+(/admin)?$")) return true;
-        if (path.equals("/api/inventory") || path.startsWith("/api/inventory/low-stock")) return true;
+        if (path.startsWith("/api/admin/") || path.equals("/api/users") || path.matches(USER_RESOURCE_PATTERN)) {
+            return true;
+        }
+        if (path.equals("/api/inventory") || path.startsWith("/api/inventory/low-stock")
+                || path.startsWith("/api/inventory/product/") || path.startsWith("/api/inventory/records/")) {
+            return true;
+        }
         if (method != HttpMethod.GET && (path.startsWith("/api/products")
-                || path.startsWith("/api/categories") || path.startsWith("/api/inventory"))) return true;
-        if (path.equals("/api/orders") || path.equals("/api/orders/stats")) return true;
-        if (method == HttpMethod.PUT && path.matches("^/api/orders/\\d+/status$")) return true;
+                || path.startsWith("/api/categories") || path.startsWith("/api/inventory"))) {
+            return true;
+        }
+        if (path.equals("/api/orders") || path.equals("/api/orders/stats")) {
+            return true;
+        }
+        if (method == HttpMethod.PUT && path.matches(ORDER_STATUS_PATTERN)) {
+            return true;
+        }
         return path.equals("/api/payments") || path.equals("/api/payments/stats");
     }
 
@@ -135,9 +174,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         String body = String.format(
                 "{\"success\":false,\"message\":\"%s\",\"errorCode\":\"%s\",\"timestamp\":\"%s\"}",
-                message, status == HttpStatus.FORBIDDEN ? "FORBIDDEN" : "UNAUTHORIZED", java.time.Instant.now()
+                message, status == HttpStatus.FORBIDDEN ? "FORBIDDEN" : "UNAUTHORIZED", Instant.now()
         );
-        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes());
+        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
         return response.writeWith(Mono.just(buffer));
     }
 

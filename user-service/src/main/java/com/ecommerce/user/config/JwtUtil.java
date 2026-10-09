@@ -21,10 +21,10 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(Long userId, String email, String role) {
+    public String generateToken(Long userId, String email) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
-        claims.put("role", role);
+        claims.put("type", "CUSTOMER");
         return createToken(claims, userId.toString());
     }
 
@@ -61,10 +61,6 @@ public class JwtUtil {
 
     public String extractEmail(String token) {
         return parseToken(token).get("email", String.class);
-    }
-
-    public String extractRole(String token) {
-        return parseToken(token).get("role", String.class);
     }
 
     private SecretKey getSigningKey() {

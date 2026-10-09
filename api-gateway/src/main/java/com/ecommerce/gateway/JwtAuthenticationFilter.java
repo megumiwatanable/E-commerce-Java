@@ -30,6 +30,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${admin.jwt.secret}")
+    private String adminJwtSecret;
+
+    @Value("${gateway.internal-secret}")
+    private String gatewayInternalSecret;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -56,12 +62,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             Claims claims = parseToken(token);
             String userId = claims.getSubject();
             String email = claims.get("email", String.class);
-            String role = claims.get("role", String.class);
+            String identityType = claims.get("type", String.class);
+
+            if (isAdminRequest(request) && !"ADMIN".equals(identityType)) {
+                return errorResponse(exchange, HttpStatus.FORBIDDEN, "Administrator access required");
+            }
+            if (!isAdminRequest(request) && !isPublicRequest(request) && !"CUSTOMER".equals(identityType)) {
+                return errorResponse(exchange, HttpStatus.FORBIDDEN, "Customer access required");
+            }
 
             ServerHttpRequest mutatedRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Email", email)
-                    .header("X-User-Role", role)
+                    .header("X-Identity-Type", identityType)
+                    .header("X-Gateway-Secret", gatewayInternalSecret)
                     .build();
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
@@ -75,6 +89,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         HttpMethod method = request.getMethod();
         if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) return true;
+        if (method == HttpMethod.POST && path.equals("/api/admin/auth/login")) return true;
         if (method == HttpMethod.GET && (path.startsWith("/api/products") || path.startsWith("/api/categories"))) return true;
         if (method == HttpMethod.GET && (path.matches("^/api/inventory/\\d+$") || path.startsWith("/api/inventory/check/"))) return true;
         if (method == HttpMethod.GET && path.startsWith("/api/orders/guest/")) return true;
@@ -83,22 +98,44 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Claims parseToken(String token) {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        try {
+            return parseToken(token, jwtSecret);
+        } catch (Exception customerTokenFailure) {
+            return parseToken(token, adminJwtSecret);
+        }
+    }
+
+    private Claims parseToken(String token, String secret) {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
         SecretKey key = Keys.hmacShaKeyFor(keyBytes);
-        return Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+    }
+
+    private boolean isAdminRequest(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+        HttpMethod method = request.getMethod();
+        if (path.startsWith("/api/admin/")) return true;
+        if (path.equals("/api/users")) return true;
+        if (path.matches("^/api/users/\\d+(/admin)?$")) return true;
+        if (path.equals("/api/inventory") || path.startsWith("/api/inventory/low-stock")) return true;
+        if (method != HttpMethod.GET && (path.startsWith("/api/products")
+                || path.startsWith("/api/categories") || path.startsWith("/api/inventory"))) return true;
+        if (path.equals("/api/orders") || path.equals("/api/orders/stats")) return true;
+        if (method == HttpMethod.PUT && path.matches("^/api/orders/\\d+/status$")) return true;
+        return path.equals("/api/payments") || path.equals("/api/payments/stats");
     }
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
+        return errorResponse(exchange, HttpStatus.UNAUTHORIZED, message);
+    }
+
+    private Mono<Void> errorResponse(ServerWebExchange exchange, HttpStatus status, String message) {
         ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         String body = String.format(
-                "{\"success\":false,\"message\":\"%s\",\"errorCode\":\"UNAUTHORIZED\",\"timestamp\":\"%s\"}",
-                message, java.time.Instant.now()
+                "{\"success\":false,\"message\":\"%s\",\"errorCode\":\"%s\",\"timestamp\":\"%s\"}",
+                message, status == HttpStatus.FORBIDDEN ? "FORBIDDEN" : "UNAUTHORIZED", java.time.Instant.now()
         );
         DataBuffer buffer = response.bufferFactory().wrap(body.getBytes());
         return response.writeWith(Mono.just(buffer));

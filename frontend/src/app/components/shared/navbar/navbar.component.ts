@@ -40,7 +40,6 @@ import { NotificationService } from '../../../services/notification.service';
                   Notifications
                   <span *ngIf="unreadCount > 0" class="badge">{{unreadCount}}</span>
                 </a>
-                <a *ngIf="authService.isAdmin()" routerLink="/admin">Admin Dashboard</a>
                 <button (click)="logout()" class="logout-btn">Logout</button>
               </div>
             </div>

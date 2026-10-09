@@ -6,6 +6,9 @@ import com.ecommerce.user.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -49,5 +52,27 @@ public class UserController {
             @RequestBody UserDTO.UpdateRequest request) {
         UserDTO user = userService.updateUser(id, request);
         return ResponseEntity.ok(ApiResponse.success("User updated", user));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers() {
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved", userService.getAllUsers()));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<UserDTO>> createUser(@Valid @RequestBody UserDTO.AdminRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("User created", userService.createUser(request)));
+    }
+
+    @PutMapping("/{id}/admin")
+    public ResponseEntity<ApiResponse<UserDTO>> updateUserAsAdmin(
+            @PathVariable Long id, @Valid @RequestBody UserDTO.AdminRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("User updated", userService.updateUserAsAdmin(id, request)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok(ApiResponse.success("User deactivated"));
     }
 }

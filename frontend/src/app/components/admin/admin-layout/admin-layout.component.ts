@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { AuthService } from '../../../services/auth.service';
+import { AdminAuthService } from '../../../services/admin-auth.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -18,6 +18,7 @@ import { AuthService } from '../../../services/auth.service';
           <a routerLink="/admin/products" routerLinkActive="active" class="nav-item">📦 Products</a>
           <a routerLink="/admin/categories" routerLinkActive="active" class="nav-item">🏷️ Categories</a>
           <a routerLink="/admin/inventory" routerLinkActive="active" class="nav-item">📋 Inventory</a>
+          <a routerLink="/admin/customers" routerLinkActive="active" class="nav-item">👥 Customers</a>
           <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item">🛒 Orders</a>
           <a routerLink="/admin/payments" routerLinkActive="active" class="nav-item">💳 Payments</a>
         </nav>
@@ -46,6 +47,6 @@ import { AuthService } from '../../../services/auth.service';
   `]
 })
 export class AdminLayoutComponent {
-  constructor(private authService: AuthService, private router: Router) {}
-  logout(): void { this.authService.logout(); this.router.navigate(['/']); }
+  constructor(private authService: AdminAuthService, private router: Router) {}
+  logout(): void { this.authService.logout(); this.router.navigate(['/admin/login']); }
 }

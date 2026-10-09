@@ -1,0 +1,19 @@
+server:
+  port: ${SERVER_PORT:18087}
+spring:
+  application:
+    name: admin-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/ecommerce_admin?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+admin:
+  jwt:
+    secret: ${ADMIN_JWT_SECRET:YWRtaW4tc2VwYXJhdGUtc2VjcmV0LWtleS1tdXN0LWJlLWxvbmc=}
+    expiration: 28800000
+management.endpoints.web.exposure.include: health,info

@@ -74,6 +74,16 @@ public class InventoryService {
         return mapToDTO(inventory);
     }
 
+    public void deleteInventory(Long productId) {
+        Inventory inventory = inventoryRepository.findByProductId(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product: " + productId));
+        if (inventory.getReservedQuantity() > 0) {
+            throw new InsufficientInventoryException("Cannot delete inventory while stock is reserved", "INVENTORY_RESERVED");
+        }
+        inventoryRepository.delete(inventory);
+        logger.info("Inventory deleted for product: {}", productId);
+    }
+
     @Transactional
     public InventoryDTO reserveInventory(Long productId, Integer quantity) {
         Inventory inventory = inventoryRepository.findByProductId(productId)

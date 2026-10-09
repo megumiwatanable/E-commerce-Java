@@ -20,6 +20,7 @@
     <modules>
         <module>api-gateway</module>
         <module>user-service</module>
+        <module>admin-service</module>
         <module>product-service</module>
         <module>inventory-service</module>
         <module>order-service</module>

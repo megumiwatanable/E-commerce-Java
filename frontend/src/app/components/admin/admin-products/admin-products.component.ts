@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
 import { Product, Category, PageResponse } from '../../../models/product.model';
+import { InventoryService, InventoryStatus } from '../../../services/inventory.service';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-admin-products',
@@ -12,7 +14,7 @@ import { Product, Category, PageResponse } from '../../../models/product.model';
     <div class="admin-page">
       <div class="page-header">
         <h1>Product Management</h1>
-        <button class="add-btn" (click)="showForm = !showForm">+ Add Product</button>
+        <button class="add-btn" (click)="openCreate()">+ Add Product</button>
       </div>
 
       <div *ngIf="showForm" class="form-card">
@@ -36,6 +38,12 @@ import { Product, Category, PageResponse } from '../../../models/product.model';
             <div class="form-group"><label>Discount %</label><input type="number" [(ngModel)]="form.discountPercentage" name="discount" step="0.01" /></div>
           </div>
           <div class="form-group"><label>Image URL</label><input [(ngModel)]="form.imageUrl" name="imageUrl" /></div>
+          <h4>Inventory</h4>
+          <div class="form-row inventory-fields">
+            <div class="form-group"><label>Available quantity</label><input type="number" min="0" [(ngModel)]="form.availableQuantity" name="availableQuantity" required /></div>
+            <div class="form-group"><label>Reorder level</label><input type="number" min="0" [(ngModel)]="form.reorderLevel" name="reorderLevel" required /></div>
+          </div>
+          <div class="form-group"><label>Warehouse location</label><input [(ngModel)]="form.warehouseLocation" name="warehouseLocation" /></div>
           <div class="btn-group">
             <button type="submit" class="save-btn">Save</button>
             <button type="button" class="cancel-btn" (click)="cancelEdit()">Cancel</button>
@@ -45,7 +53,7 @@ import { Product, Category, PageResponse } from '../../../models/product.model';
 
       <table class="data-table">
         <thead>
-          <tr><th>SKU</th><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Status</th><th>Actions</th></tr>
+          <tr><th>SKU</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let p of products">
@@ -53,7 +61,7 @@ import { Product, Category, PageResponse } from '../../../models/product.model';
             <td>{{p.name}}</td>
             <td>{{p.categoryName || '-'}}</td>
             <td>\${{p.finalPrice.toFixed(2)}}</td>
-            <td>{{p.discountPercentage}}%</td>
+            <td><span class="stock" [class.out]="!inventoryFor(p.id)?.availableQuantity">{{inventoryFor(p.id)?.stockStatus || 'NOT SET'}}</span><small *ngIf="inventoryFor(p.id)"> {{inventoryFor(p.id)?.availableQuantity}} available</small></td>
             <td><span class="badge" [class]="p.status.toLowerCase()">{{p.status}}</span></td>
             <td>
               <button class="action-btn edit" (click)="editProduct(p)">Edit</button>
@@ -80,6 +88,7 @@ import { Product, Category, PageResponse } from '../../../models/product.model';
     .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
     .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
     .form-group textarea { height: 60px; }
+    h4{margin:18px 0 10px;color:#185c4a}.stock{display:block;font-size:.7rem;font-weight:800;color:#18724b}.stock.out{color:#a83b2e}.data-table small{color:#7d8794}
     .btn-group { display: flex; gap: 8px; }
     .save-btn { padding: 10px 24px; background: #16a34a; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .cancel-btn { padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; }
@@ -103,10 +112,12 @@ export class AdminProductsComponent implements OnInit {
   showForm = false;
   editingProduct?: Product;
   form: any = {};
+  inventory = new Map<number, InventoryStatus>();
 
-  constructor(private productService: ProductService) {}
+  constructor(private productService: ProductService, private inventoryService: InventoryService, private toast: ToastService) {}
   ngOnInit(): void {
     this.loadProducts();
+    this.loadInventory();
     this.productService.getCategories().subscribe(res => {
       if (res.success && res.data) this.categories = res.data;
     });
@@ -123,27 +134,36 @@ export class AdminProductsComponent implements OnInit {
 
   editProduct(p: Product): void {
     this.editingProduct = p;
-    this.form = { ...p };
+    const stock=this.inventory.get(p.id);
+    this.form = { ...p, availableQuantity:stock?.availableQuantity??0, reorderLevel:stock?.reorderLevel??10, warehouseLocation:stock?.warehouseLocation||'' };
     this.showForm = true;
   }
 
   saveProduct(): void {
+    const inventoryData={availableQuantity:this.form.availableQuantity,reorderLevel:this.form.reorderLevel,warehouseLocation:this.form.warehouseLocation};
+    const productData={...this.form};delete productData.availableQuantity;delete productData.reorderLevel;delete productData.warehouseLocation;delete productData.finalPrice;delete productData.categoryName;delete productData.createdAt;delete productData.id;delete productData.rating;
     if (this.editingProduct) {
-      this.productService.updateProduct(this.editingProduct.id, this.form).subscribe(() => {
-        this.cancelEdit(); this.loadProducts();
-      });
+      delete productData.sku;
+      const product=this.editingProduct;
+      this.productService.updateProduct(product.id, productData).subscribe({next:()=>{
+        const stock=this.inventory.get(product.id);const op=stock?this.inventoryService.update(product.id,inventoryData):this.inventoryService.create({productId:product.id,sku:product.sku,...inventoryData});
+        op.subscribe({next:()=>this.finishSave('Product and inventory updated.'),error:e=>this.toast.error(e.error?.message||'Product saved, but inventory failed.')});
+      },error:e=>this.toast.error(e.error?.message||'Could not update product.')});
     } else {
-      this.productService.createProduct(this.form).subscribe(() => {
-        this.cancelEdit(); this.loadProducts();
-      });
+      this.productService.createProduct(productData).subscribe({next:r=>{if(!r.data)return;this.inventoryService.create({productId:r.data.id,sku:r.data.sku,...inventoryData}).subscribe({next:()=>this.finishSave('Product and inventory created.'),error:e=>this.toast.error(e.error?.message||'Product created, but inventory failed.')})},error:e=>this.toast.error(e.error?.message||'Could not create product.')});
     }
   }
 
   deleteProduct(id: number): void {
     if (confirm('Delete this product?')) {
-      this.productService.deleteProduct(id).subscribe(() => this.loadProducts());
+      const deactivate=()=>this.productService.deleteProduct(id).subscribe({next:()=>{this.toast.success('Product deactivated.');this.loadProducts();this.loadInventory()},error:e=>this.toast.error(e.error?.message||'Could not delete product.')});
+      if(this.inventory.has(id))this.inventoryService.delete(id).subscribe({next:deactivate,error:e=>this.toast.error(e.error?.message||'Could not delete linked inventory.')});else deactivate();
     }
   }
 
+  inventoryFor(id:number):InventoryStatus|undefined{return this.inventory.get(id)}
+  openCreate():void{this.editingProduct=undefined;this.form={discountPercentage:0,availableQuantity:0,reorderLevel:10,warehouseLocation:''};this.showForm=true}
+  loadInventory():void{this.inventoryService.getAll().subscribe(r=>{this.inventory.clear();(r.data||[]).forEach(i=>this.inventory.set(i.productId,i))})}
+  finishSave(message:string):void{this.toast.success(message);this.cancelEdit();this.loadProducts();this.loadInventory()}
   cancelEdit(): void { this.showForm = false; this.editingProduct = undefined; this.form = {}; }
 }

@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
@@ -44,7 +46,7 @@ public class UserService {
         user = userRepository.save(user);
         logger.info("User registered successfully: {}", user.getEmail());
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         return new UserDTO.AuthResponse(token, user.getId(), user.getEmail(),
                 user.getFirstName(), user.getLastName(), user.getRole().name());
     }
@@ -61,11 +63,15 @@ public class UserService {
             throw new InvalidRequestException("Invalid email or password", "INVALID_CREDENTIALS");
         }
 
+        if (user.getRole() != User.Role.CUSTOMER) {
+            throw new InvalidRequestException("Invalid email or password", "INVALID_CREDENTIALS");
+        }
+
         if (user.getStatus() != User.UserStatus.ACTIVE) {
             throw new InvalidRequestException("Account is not active", "ACCOUNT_INACTIVE");
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         logger.info("User logged in successfully: {}", user.getEmail());
         return new UserDTO.AuthResponse(token, user.getId(), user.getEmail(),
                 user.getFirstName(), user.getLastName(), user.getRole().name());
@@ -94,6 +100,53 @@ public class UserService {
         user = userRepository.save(user);
         logger.info("User updated successfully: {}", user.getEmail());
         return mapToDTO(user);
+    }
+
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream().map(this::mapToDTO).toList();
+    }
+
+    public UserDTO createUser(UserDTO.AdminRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("Email already registered", "DUPLICATE_EMAIL");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new InvalidRequestException("Password is required", "PASSWORD_REQUIRED");
+        }
+        User user = new User();
+        applyAdminRequest(user, request, true);
+        return mapToDTO(userRepository.save(user));
+    }
+
+    public UserDTO updateUserAsAdmin(Long id, UserDTO.AdminRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        if (!user.getEmail().equalsIgnoreCase(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("Email already registered", "DUPLICATE_EMAIL");
+        }
+        applyAdminRequest(user, request, false);
+        return mapToDTO(userRepository.save(user));
+    }
+
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        user.setStatus(User.UserStatus.INACTIVE);
+        userRepository.save(user);
+    }
+
+    private void applyAdminRequest(User user, UserDTO.AdminRequest request, boolean creating) {
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail().trim().toLowerCase());
+        user.setPhone(request.getPhone());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        } else if (creating) {
+            throw new InvalidRequestException("Password is required", "PASSWORD_REQUIRED");
+        }
+        user.setRole(User.Role.CUSTOMER);
+        user.setStatus(User.UserStatus.valueOf(request.getStatus()));
     }
 
     private UserDTO mapToDTO(User user) {

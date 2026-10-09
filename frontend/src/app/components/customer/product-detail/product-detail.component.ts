@@ -5,6 +5,7 @@ import { ProductService } from '../../../services/product.service';
 import { CartService } from '../../../services/cart.service';
 import { ToastService } from '../../../services/toast.service';
 import { Product } from '../../../models/product.model';
+import { InventoryService, InventoryStatus } from '../../../services/inventory.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -31,15 +32,20 @@ import { Product } from '../../../models/product.model';
           </div>
           <p class="description">{{product.description}}</p>
           <div class="sku">SKU: {{product.sku}}</div>
+          <div *ngIf="stockLoading" class="stock-status loading">Checking availability…</div>
+          <div *ngIf="!stockLoading" class="stock-status" [class.out]="!canPurchase" [class.low]="stock?.stockStatus === 'LOW_STOCK'">
+            <span></span>{{stockLabel}}
+          </div>
           <div class="quantity-selector">
             <label>Quantity:</label>
             <button (click)="decrementQty()">-</button>
             <span>{{quantity}}</span>
-            <button (click)="incrementQty()">+</button>
+            <button (click)="incrementQty()" [disabled]="!canIncrement">+</button>
+            <small *ngIf="stock">Maximum {{stock.availableQuantity}}</small>
           </div>
           <div class="actions">
-            <button class="add-cart" (click)="addToCart()">Add to Cart</button>
-            <button class="buy-now" (click)="buyNow()">Buy Now</button>
+            <button class="add-cart" (click)="addToCart()" [disabled]="!canPurchase || stockLoading">{{canPurchase ? 'Add to Cart' : 'Out of stock'}}</button>
+            <button class="buy-now" (click)="buyNow()" [disabled]="!canPurchase || stockLoading">Buy Now</button>
           </div>
           <div class="features">
             <p>🚚 Free shipping on orders over $100</p>
@@ -67,10 +73,12 @@ import { Product } from '../../../models/product.model';
     .save-text { color: #16a34a; font-weight: 600; font-size: 0.9rem; }
     .description { color: #555; line-height: 1.7; margin: 16px 0; }
     .sku { color: #888; font-size: 0.85rem; margin-bottom: 16px; }
+    .stock-status{display:flex;align-items:center;gap:8px;color:#18724b;font-weight:800;font-size:.86rem}.stock-status span{width:9px;height:9px;border-radius:50%;background:currentColor}.stock-status.low{color:#a56812}.stock-status.out{color:#b34135}.stock-status.loading{color:#788292}.stock-status.loading span{display:none}
     .quantity-selector { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
     .quantity-selector label { font-weight: 600; }
     .quantity-selector button { width: 36px; height: 36px; border: 1px solid #ddd; background: white; border-radius: 6px; font-size: 1.1rem; cursor: pointer; }
     .quantity-selector span { font-size: 1.1rem; font-weight: 600; min-width: 30px; text-align: center; }
+    .quantity-selector small{color:#7b8594}.quantity-selector button:disabled,.actions button:disabled{opacity:.45;cursor:not-allowed}
     .actions { display: flex; gap: 12px; margin: 24px 0; }
     .add-cart { flex: 1; padding: 14px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; }
     .add-cart:hover { background: #16213e; }
@@ -82,6 +90,8 @@ import { Product } from '../../../models/product.model';
 })
 export class ProductDetailComponent implements OnInit {
   product?: Product;
+  stock?: InventoryStatus;
+  stockLoading = true;
   quantity = 1;
   Math = Math;
 
@@ -89,6 +99,7 @@ export class ProductDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private productService: ProductService,
+    private inventoryService: InventoryService,
     private cartService: CartService,
     private toast: ToastService
   ) {}
@@ -96,13 +107,17 @@ export class ProductDetailComponent implements OnInit {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.productService.getProductById(+params['id']).subscribe(res => {
-        if (res.success && res.data) this.product = res.data;
+        if (res.success && res.data) { this.product = res.data; this.loadStock(res.data.id); }
       });
     });
   }
 
-  incrementQty(): void { this.quantity++; }
+  incrementQty(): void { if (this.canIncrement) this.quantity++; }
   decrementQty(): void { if (this.quantity > 1) this.quantity--; }
+  get canPurchase(): boolean { return !!this.stock && this.stock.availableQuantity > 0; }
+  get canIncrement(): boolean { return this.canPurchase && this.quantity < (this.stock?.availableQuantity || 0); }
+  get stockLabel(): string { if (!this.stock) return 'Inventory unavailable'; if (!this.stock.availableQuantity) return 'Out of stock'; if (this.stock.stockStatus === 'LOW_STOCK') return `Low stock — only ${this.stock.availableQuantity} left`; return `In stock — ${this.stock.availableQuantity} available`; }
+  private loadStock(productId:number):void { this.stockLoading=true;this.inventoryService.getByProduct(productId).subscribe({next:r=>{this.stock=r.data;this.stockLoading=false;this.quantity=Math.min(this.quantity,Math.max(1,this.stock?.availableQuantity||1))},error:()=>{this.stock=undefined;this.stockLoading=false;}}); }
 
   addToCart(): void {
     if (this.product) {

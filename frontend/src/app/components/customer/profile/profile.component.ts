@@ -33,10 +33,6 @@ import { ToastService } from '../../../services/toast.service';
             <label>Phone</label>
             <input [(ngModel)]="user.phone" name="phone" />
           </div>
-          <div class="form-group">
-            <label>Role</label>
-            <input [value]="user.role" disabled />
-          </div>
           <button type="submit" class="save-btn">Save Changes</button>
         </form>
       </div>

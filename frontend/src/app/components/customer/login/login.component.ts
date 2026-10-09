@@ -39,8 +39,7 @@ import { AuthService } from '../../../services/auth.service';
         <p class="auth-link">Don't have an account? <a routerLink="/register">Register</a></p>
 
         <div class="demo-credentials">
-          <p><strong>Demo Accounts:</strong></p>
-          <p>Admin: admin&#64;example.com / password</p>
+          <p><strong>Demo customer:</strong></p>
           <p>Customer: customer1&#64;example.com / password</p>
         </div>
       </div>
@@ -90,12 +89,7 @@ export class LoginComponent {
       next: (response) => {
         this.loading = false;
         if (response.success) {
-          const user = response.data;
-          if (user?.role === 'ADMIN') {
-            this.router.navigate(['/admin']);
-          } else {
-            this.router.navigate([this.returnUrl]);
-          }
+          this.router.navigate([this.returnUrl]);
         } else {
           this.error = response.message || 'Login failed';
         }

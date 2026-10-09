@@ -49,6 +49,11 @@ export class AuthService {
     return this.http.put<ApiResponse<User>>(`${this.apiUrl}/users/me`, data);
   }
 
+  getUsers(): Observable<ApiResponse<User[]>> { return this.http.get<ApiResponse<User[]>>(`${this.apiUrl}/users`); }
+  createUser(data: Partial<User> & { password?: string }): Observable<ApiResponse<User>> { return this.http.post<ApiResponse<User>>(`${this.apiUrl}/users`, data); }
+  updateUser(id:number,data:Partial<User> & {password?:string}):Observable<ApiResponse<User>> { return this.http.put<ApiResponse<User>>(`${this.apiUrl}/users/${id}/admin`,data); }
+  deleteUser(id:number):Observable<ApiResponse<void>> { return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/users/${id}`); }
+
   private setSession(authResult: AuthResponse): void {
     localStorage.setItem('currentUser', JSON.stringify(authResult));
     localStorage.setItem('token', authResult.token);
@@ -67,16 +72,6 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getToken();
-  }
-
-  isAdmin(): boolean {
-    const user = this.currentUserSubject.value;
-    return user?.role === 'ADMIN';
-  }
-
-  isCustomer(): boolean {
-    const user = this.currentUserSubject.value;
-    return user?.role === 'CUSTOMER';
   }
 
   getCurrentUser(): AuthResponse | null {

@@ -54,6 +54,12 @@ public class InventoryController {
         return ResponseEntity.ok(ApiResponse.success("Inventory updated", inventory));
     }
 
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<Void>> deleteInventory(@PathVariable Long productId) {
+        inventoryService.deleteInventory(productId);
+        return ResponseEntity.ok(ApiResponse.success("Inventory deleted"));
+    }
+
     @PostMapping("/reserve")
     public ResponseEntity<ApiResponse<InventoryDTO>> reserveInventory(
             @Valid @RequestBody InventoryDTO.ReserveRequest request) {

@@ -16,6 +16,10 @@ public class ApiGatewayApplication {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route("admin-service", r -> r
+                        .path("/api/admin/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://admin-service:8087"))
                 .route("user-service", r -> r
                         .path("/api/auth/**", "/api/users/**")
                         .filters(f -> f.stripPrefix(0))

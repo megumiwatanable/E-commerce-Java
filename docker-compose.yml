@@ -42,6 +42,24 @@ services:
       MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-secure-random-string}
+      GATEWAY_INTERNAL_SECRET: ${GATEWAY_INTERNAL_SECRET:-local-gateway-to-service-secret}
+    networks:
+      - ecommerce-network
+      - workspace-app-network
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: admin-service/Dockerfile
+    container_name: ecommerce-admin-service
+    ports:
+      - "${ADMIN_SERVICE_HOST_PORT:-18087}:8087"
+    environment:
+      SERVER_PORT: 8087
+      MYSQL_HOST: ${MYSQL_HOST:-workspace-mysql-1}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-YWRtaW4tc2VwYXJhdGUtc2VjcmV0LWtleS1tdXN0LWJlLWxvbmc=}
     networks:
       - ecommerce-network
       - workspace-app-network
@@ -155,8 +173,11 @@ services:
     environment:
       SERVER_PORT: 8080
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-secure-random-string}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-YWRtaW4tc2VwYXJhdGUtc2VjcmV0LWtleS1tdXN0LWJlLWxvbmc=}
+      GATEWAY_INTERNAL_SECRET: ${GATEWAY_INTERNAL_SECRET:-local-gateway-to-service-secret}
     depends_on:
       - user-service
+      - admin-service
       - product-service
       - inventory-service
       - order-service

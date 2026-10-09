@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
 import { Category } from '../../../models/product.model';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-admin-categories',
@@ -11,15 +12,15 @@ import { Category } from '../../../models/product.model';
   template: `
     <div class="admin-page">
       <div class="page-header"><h1>Category Management</h1>
-        <button class="add-btn" (click)="showForm = !showForm">+ Add Category</button>
+        <button class="add-btn" (click)="openForm()">+ Add Category</button>
       </div>
       <div *ngIf="showForm" class="form-card">
         <form (ngSubmit)="saveCategory()">
           <div class="form-group"><label>Name</label><input [(ngModel)]="form.name" name="name" required /></div>
           <div class="form-group"><label>Description</label><input [(ngModel)]="form.description" name="description" /></div>
           <div class="btn-group">
-            <button type="submit" class="save-btn">Save</button>
-            <button type="button" class="cancel-btn" (click)="showForm=false; form={}">Cancel</button>
+            <button type="submit" class="save-btn">{{editingCategory ? 'Update' : 'Create'}}</button>
+            <button type="button" class="cancel-btn" (click)="cancelEdit()">Cancel</button>
           </div>
         </form>
       </div>
@@ -30,6 +31,7 @@ import { Category } from '../../../models/product.model';
             <td><strong>{{c.name}}</strong></td><td>{{c.description || '-'}}</td>
             <td><span class="badge" [class]="c.status.toLowerCase()">{{c.status}}</span></td>
             <td>
+              <button class="action-btn edit" (click)="openForm(c)">Edit</button>
               <button class="action-btn delete" (click)="deleteCategory(c.id)">Delete</button>
             </td>
           </tr>
@@ -54,6 +56,7 @@ import { Category } from '../../../models/product.model';
     .data-table th { background: #f8f9fa; font-weight: 600; color: #555; }
     .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
     .action-btn.delete { background: #fee; color: #e94560; }
+    .action-btn.edit { background: #dbeafe; color: #1e40af; margin-right: 5px; }
     .badge { padding: 4px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
     .badge.active { background: #d4edda; color: #155724; }
   `]
@@ -61,16 +64,22 @@ import { Category } from '../../../models/product.model';
 export class AdminCategoriesComponent implements OnInit {
   categories: Category[] = [];
   showForm = false;
+  editingCategory?: Category;
   form: any = {};
-  constructor(private productService: ProductService) {}
+  constructor(private productService: ProductService, private toast: ToastService) {}
   ngOnInit(): void { this.loadCategories(); }
   loadCategories(): void {
     this.productService.getCategories().subscribe(res => { if (res.success && res.data) this.categories = res.data; });
   }
   saveCategory(): void {
-    this.productService.createCategory(this.form).subscribe(() => { this.showForm = false; this.form = {}; this.loadCategories(); });
+    const request = this.editingCategory
+      ? this.productService.updateCategory(this.editingCategory.id, this.form)
+      : this.productService.createCategory(this.form);
+    request.subscribe({next:()=>{this.toast.success(`Category ${this.editingCategory?'updated':'created'}.`);this.cancelEdit();this.loadCategories()},error:e=>this.toast.error(e.error?.message||'Could not save category.')});
   }
   deleteCategory(id: number): void {
-    if (confirm('Delete this category?')) this.productService.deleteCategory(id).subscribe(() => this.loadCategories());
+    if (confirm('Delete this category?')) this.productService.deleteCategory(id).subscribe({next:()=>{this.toast.success('Category deactivated.');this.loadCategories()},error:e=>this.toast.error(e.error?.message||'Could not delete category.')});
   }
+  openForm(category?:Category):void{this.editingCategory=category;this.form=category?{name:category.name,description:category.description}:{};this.showForm=true}
+  cancelEdit():void{this.showForm=false;this.editingCategory=undefined;this.form={}}
 }

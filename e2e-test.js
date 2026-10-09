@@ -6,7 +6,7 @@ function request(method, path, body, token) {
     if (token) headers['Authorization'] = `Bearer ${token}`;
     
     const options = {
-      hostname: 'localhost', port: 8090, path, method, headers
+      hostname: 'localhost', port: Number(process.env.API_GATEWAY_HOST_PORT || 18090), path, method, headers
     };
     
     const req = http.request(options, (res) => {

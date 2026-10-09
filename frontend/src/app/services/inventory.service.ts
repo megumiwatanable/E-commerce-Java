@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../models/order.model';
+import { API_BASE_URL } from '../config/api.config';
 
 export interface InventoryStatus {
   productId: number;
@@ -14,6 +15,6 @@ export interface InventoryStatus {
 export class InventoryService {
   constructor(private http: HttpClient) {}
   getByProduct(productId: number): Observable<ApiResponse<InventoryStatus>> {
-    return this.http.get<ApiResponse<InventoryStatus>>(`http://localhost:8090/api/inventory/${productId}`);
+    return this.http.get<ApiResponse<InventoryStatus>>(`${API_BASE_URL}/inventory/${productId}`);
   }
 }

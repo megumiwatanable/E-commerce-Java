@@ -1,5 +1,5 @@
 server:
-  port: 8084
+  port: ${SERVER_PORT:18084}
 
 spring:
   application:
@@ -24,7 +24,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -36,13 +36,13 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 product-service:
-  url: ${PRODUCT_SERVICE_URL:http://localhost:8082}
+  url: ${PRODUCT_SERVICE_URL:http://localhost:18082}
 
 inventory-service:
-  url: ${INVENTORY_SERVICE_URL:http://localhost:8083}
+  url: ${INVENTORY_SERVICE_URL:http://localhost:18083}
 
 payment-service:
-  url: ${PAYMENT_SERVICE_URL:http://localhost:8085}
+  url: ${PAYMENT_SERVICE_URL:http://localhost:18085}
 
 management:
   endpoints:

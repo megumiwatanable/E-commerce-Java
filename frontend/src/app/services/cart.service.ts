@@ -4,13 +4,14 @@ import { BehaviorSubject, Observable, of, tap, switchMap, map, forkJoin, catchEr
 import { Cart, ApiResponse } from '../models/order.model';
 import { Product } from '../models/product.model';
 import { InventoryService } from './inventory.service';
+import { API_BASE_URL } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CartService {
   private readonly guestCartKey = 'guestCart';
-  private apiUrl = 'http://localhost:8090/api/cart';
+  private apiUrl = `${API_BASE_URL}/cart`;
   private cartSubject = new BehaviorSubject<Cart | null>(null);
   public cart$ = this.cartSubject.asObservable();
 

@@ -1,5 +1,5 @@
 server:
-  port: 8086
+  port: ${SERVER_PORT:18086}
 
 spring:
   application:
@@ -24,7 +24,7 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
     consumer:
       group-id: notification-service-group
       auto-offset-reset: earliest

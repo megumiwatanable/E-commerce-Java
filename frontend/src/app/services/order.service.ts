@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Order, OrderItem, ApiResponse, PageResponse, PlaceOrderRequest, PlaceOrderResult } from '../models/order.model';
+import { API_BASE_URL } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OrderService {
-  private apiUrl = 'http://localhost:8090/api/orders';
+  private apiUrl = `${API_BASE_URL}/orders`;
 
   constructor(private http: HttpClient) {}
 
@@ -16,7 +17,7 @@ export class OrderService {
   }
 
   placeOrder(request: PlaceOrderRequest): Observable<ApiResponse<PlaceOrderResult>> {
-    return this.http.post<ApiResponse<PlaceOrderResult>>('http://localhost:8090/api/checkout/place-order', request);
+    return this.http.post<ApiResponse<PlaceOrderResult>>(`${API_BASE_URL}/checkout/place-order`, request);
   }
 
   getOrderById(id: number): Observable<ApiResponse<Order>> {

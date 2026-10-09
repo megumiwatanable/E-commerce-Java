@@ -317,12 +317,12 @@ Once running, access Swagger UI for each service:
 
 | Service | Swagger URL |
 |---------|-------------|
-| User Service | http://localhost:8081/swagger-ui.html |
-| Product Service | http://localhost:8082/swagger-ui.html |
-| Inventory Service | http://localhost:8083/swagger-ui.html |
-| Order Service | http://localhost:8084/swagger-ui.html |
-| Payment Service | http://localhost:8085/swagger-ui.html |
-| Notification Service | http://localhost:8086/swagger-ui.html |
+| User Service | http://localhost:18081/swagger-ui.html |
+| Product Service | http://localhost:18082/swagger-ui.html |
+| Inventory Service | http://localhost:18083/swagger-ui.html |
+| Order Service | http://localhost:18084/swagger-ui.html |
+| Payment Service | http://localhost:18085/swagger-ui.html |
+| Notification Service | http://localhost:18086/swagger-ui.html |
 
 ---
 
@@ -378,8 +378,8 @@ cp .env.example .env
 docker-compose up --build -d
 
 # Wait for services to start (~60 seconds), then access:
-# Frontend:      http://localhost:4200
-# API Gateway:   http://localhost:8080
+# Frontend:      http://localhost:14200
+# API Gateway:   http://localhost:18090
 ```
 
 ### Local Development
@@ -418,13 +418,13 @@ docker-compose up --build -d
 | ecommerce-mysql | 3306 | `docker exec ecommerce-mysql mysqladmin ping` |
 | ecommerce-zookeeper | 2181 | `docker logs ecommerce-zookeeper` |
 | ecommerce-kafka | 9092 | `docker logs ecommerce-kafka` |
-| ecommerce-user-service | 8081 | `curl http://localhost:8081/actuator/health` |
-| ecommerce-product-service | 8082 | `curl http://localhost:8082/actuator/health` |
-| ecommerce-inventory-service | 8083 | `curl http://localhost:8083/actuator/health` |
-| ecommerce-order-service | 8084 | `curl http://localhost:8084/actuator/health` |
-| ecommerce-payment-service | 8085 | `curl http://localhost:8085/actuator/health` |
-| ecommerce-notification-service | 8086 | `curl http://localhost:8086/actuator/health` |
-| ecommerce-api-gateway | 8080 | `curl http://localhost:8080/actuator/health` |
+| ecommerce-user-service | 18081 | `curl http://localhost:18081/actuator/health` |
+| ecommerce-product-service | 18082 | `curl http://localhost:18082/actuator/health` |
+| ecommerce-inventory-service | 18083 | `curl http://localhost:18083/actuator/health` |
+| ecommerce-order-service | 18084 | `curl http://localhost:18084/actuator/health` |
+| ecommerce-payment-service | 18085 | `curl http://localhost:18085/actuator/health` |
+| ecommerce-notification-service | 18086 | `curl http://localhost:18086/actuator/health` |
+| ecommerce-api-gateway | 18090 | `curl http://localhost:18090/actuator/health` |
 
 ### Stop Services
 

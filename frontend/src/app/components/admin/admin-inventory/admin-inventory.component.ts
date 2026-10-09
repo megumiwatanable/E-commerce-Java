@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '../../../config/api.config';
 
 @Component({
   selector: 'app-admin-inventory',
@@ -40,7 +41,7 @@ export class AdminInventoryComponent implements OnInit {
   inventory: any[] = [];
   constructor(private http: HttpClient) {}
   ngOnInit(): void {
-    this.http.get<any>('http://localhost:8090/api/inventory').subscribe(res => {
+    this.http.get<any>(`${API_BASE_URL}/inventory`).subscribe(res => {
       if (res.success && res.data) this.inventory = res.data;
     });
   }
